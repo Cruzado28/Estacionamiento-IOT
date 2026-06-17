@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 const db = require("./config/db");
+const initDatabase = require("./config/initDb");
 
 const app = express();
 
@@ -480,6 +481,21 @@ app.get("/api/salida/:uid", async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Servidor iniciado en http://localhost:${PORT}`);
-}); 
+async function iniciarServidor() {
+  try {
+    await initDatabase();
+
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Servidor iniciado en el puerto ${PORT}`);
+    });
+  } catch (error) {
+    console.error(
+      "No se pudo iniciar el servidor:",
+      error.message
+    );
+
+    process.exit(1);
+  }
+}
+
+iniciarServidor();
