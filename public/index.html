@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Estacionamiento Inteligente IoT</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <h2>Smart Parking</h2>
+      <p>Estacionamiento IoT</p>
+
+      <nav>
+        <a href="#" class="active">Dashboard</a>
+        <a href="#">Vehículos</a>
+        <a href="#">Pagos</a>
+        <a href="#">Historial</a>
+        <a href="#">Reportes</a>
+        <a href="#">Configuración</a>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h1>Dashboard del Estacionamiento</h1>
+          <p>Visualización general del sistema inteligente IoT</p>
+        </div>
+        <span class="status-online">Sistema activo</span>
+      </header>
+
+      <section class="cards">
+        <div class="card">
+          <h3>Espacios totales</h3>
+          <p id="totalEspacios">10</p>
+        </div>
+
+        <div class="card">
+          <h3>Espacios libres</h3>
+          <p id="espaciosLibres">6</p>
+        </div>
+
+        <div class="card">
+          <h3>Ocupados</h3>
+          <p id="espaciosOcupados">4</p>
+        </div>
+
+        <div class="card">
+          <h3>Ingresos del día</h3>
+          <p id="ingresosDia">S/ 25.00</p>
+        </div>
+      </section>
+
+<section class="panel controls-panel">
+  <h2>Control de pruebas RFID</h2>
+  <p class="description">
+    Simulación de acciones que luego realizará el ESP32 mediante los lectores RFID.
+  </p>
+
+  <div class="controls">
+    <select id="rfidSelect">
+      <option value="RFID-001">RFID-001</option>
+      <option value="RFID-002">RFID-002</option>
+      <option value="RFID-003">RFID-003</option>
+    </select>
+
+    <button onclick="ejecutarAccion('ingreso')">Registrar ingreso</button>
+    <button onclick="ejecutarAccion('pago')">Registrar pago</button>
+    <button onclick="ejecutarAccion('salida')">Registrar salida</button>
+  </div>
+
+  <div id="mensajeAccion" class="message-box">
+    Selecciona una tarjeta RFID y ejecuta una acción.
+  </div>
+</section>
+
+      <section class="content-grid">
+        <div class="panel">
+          <h2>Mapa de espacios</h2>
+          <p class="description">
+            Vista basada en la maqueta física de 10 espacios de estacionamiento.
+          </p>
+
+          <div class="parking-grid" id="parkingGrid">
+            <!-- Los espacios se generan con JavaScript -->
+          </div>
+
+          <div class="legend">
+            <span><b class="free"></b> Libre</span>
+            <span><b class="occupied"></b> Ocupado</span>
+            <span><b class="paid"></b> Pagado</span>
+            <span><b class="pending"></b> Pago pendiente</span>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Últimos eventos</h2>
+
+          <div class="events" id="eventsList">
+            <!-- Los eventos se generan con JavaScript -->
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Vehículos dentro del estacionamiento</h2>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Tarjeta RFID</th>
+              <th>Espacio</th>
+              <th>Hora ingreso</th>
+              <th>Tiempo</th>
+              <th>Estado pago</th>
+              <th>Monto</th>
+            </tr>
+          </thead>
+          <tbody id="vehiclesTable">
+            <!-- Datos de ejemplo -->
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
