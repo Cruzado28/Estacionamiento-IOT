@@ -12,4 +12,15 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
+pool.on("connection", (connection) => {
+  connection.query("SET time_zone = '-05:00'", (error) => {
+    if (error) {
+      console.error(
+        "Error al configurar la zona horaria de MySQL:",
+        error.message
+      );
+    }
+  });
+});
+
 module.exports = pool;

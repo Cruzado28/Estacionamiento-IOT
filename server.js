@@ -22,7 +22,12 @@ app.get("/api/status", (req, res) => {
 
 app.get("/api/db-test", async (req, res) => {
   try {
-    const [rows] = await db.query("SELECT DATABASE() AS base_actual, NOW() AS fecha_servidor");
+    const [rows] = await db.query(`
+  SELECT
+    DATABASE() AS base_actual,
+    DATE_FORMAT(NOW(), '%Y-%m-%d %H:%i:%s') AS fecha_servidor,
+    @@SESSION.time_zone AS zona_horaria
+`);
 
     res.json({
       ok: true,
