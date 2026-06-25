@@ -246,13 +246,13 @@ CREATE TABLE IF NOT EXISTS sesiones_parqueo (
     CONSTRAINT fk_sesiones_vehiculo
         FOREIGN KEY (vehiculo_id)
         REFERENCES vehiculos(id_vehiculo)
-        ON UPDATE CASCADE
+        ON UPDATE RESTRICT
         ON DELETE RESTRICT,
 
     CONSTRAINT fk_sesiones_espacio
         FOREIGN KEY (espacio_id)
         REFERENCES espacios(id_espacio)
-        ON UPDATE CASCADE
+        ON UPDATE RESTRICT
         ON DELETE RESTRICT,
 
     CONSTRAINT fk_sesiones_tarjeta
