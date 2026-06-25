@@ -726,14 +726,14 @@ tbody tr:hover{background:var(--bg-hover)}
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px">
           <div><label class="form-label">Placa</label><input class="form-input" placeholder="ABC-123" id="h-plate"/></div>
           <div><label class="form-label">Conductor</label><input class="form-input" placeholder="Nombre..." id="h-driver"/></div>
-          <div><label class="form-label">Fecha Inicio</label><input class="form-input" type="date" id="h-from" value="2025-06-01"/></div>
-          <div><label class="form-label">Fecha Fin</label><input class="form-input" type="date" id="h-to" value="2025-06-18"/></div>
-          <div><label class="form-label">Estado</label><select class="form-select" id="h-status"><option value="">Todos</option><option>Completado</option><option>Activo</option></select></div>
-          <div><label class="form-label">Tipo</label><select class="form-select" id="h-type"><option value="">Todos</option><option>Auto</option><option>SUV</option><option>Moto</option></select></div>
+          <div><label class="form-label">Fecha Inicio</label><input class="form-input" type="date" id="h-from"/></div>
+          <div><label class="form-label">Fecha Fin</label><input class="form-input" type="date" id="h-to"/></div>
+          <div><label class="form-label">Estado</label><select class="form-select" id="h-status"><option value="">Todos</option><option value="Finalizada">Completado</option><option value="Activa">Activo</option><option value="Pagada">Pagado</option><option value="Penalizada">Penalizado</option></select></div>
+          <div><label class="form-label">Tipo</label><select class="form-select" id="h-type"><option value="">Todos</option><option value="Auto">Auto</option><option value="SUV">SUV</option><option value="Moto">Moto</option><option value="Camioneta">Camioneta</option></select></div>
         </div>
         <div style="margin-top:12px;display:flex;gap:8px">
-          <button class="btn btn-primary btn-sm" onclick="showToast('success','Filtros aplicados','fa-filter')"><i class="fa-solid fa-filter"></i> Aplicar Filtros</button>
-          <button class="btn btn-ghost btn-sm" onclick="showToast('info','Filtros limpiados','fa-xmark')"><i class="fa-solid fa-xmark"></i> Limpiar</button>
+          <button class="btn btn-primary btn-sm" onclick="aplicarFiltrosHistorial()"><i class="fa-solid fa-filter"></i> Aplicar Filtros</button>
+          <button class="btn btn-ghost btn-sm" onclick="limpiarFiltrosHistorial()"><i class="fa-solid fa-xmark"></i> Limpiar</button>
         </div>
       </div>
       <!-- History charts -->
@@ -1079,43 +1079,8 @@ tbody tr:hover{background:var(--bg-hover)}
 // ============================================================
 const VEHICLES_DATA = [];
 
-const HISTORY_DATA = [
-  {date:'18/06/2025',in:'10:20',out:'12:05',total:'1h 45m',driver:'Juan Pérez',plate:'ABC-123',consume:'S/ 120',discount:'S/ 10',total_pay:'S/ 5.15',
-    activities:[
-      {hour:'10:35',store:'Plaza Vea',cat:'Supermercado',desc:'Compra de abarrotes y productos del hogar',amount:'S/ 75.00',kind:'consumo'},
-      {hour:'11:20',store:'Starbucks',cat:'Cafetería',desc:'Café y postre',amount:'S/ 18.00',kind:'consumo'},
-      {hour:'11:50',store:'Boticas Arcángel',cat:'Farmacia',desc:'Vitaminas',amount:'S/ 27.00',kind:'consumo'},
-    ]},
-  {date:'18/06/2025',in:'09:05',out:'14:30',total:'5h 25m',driver:'María García',plate:'XYZ-789',consume:'S/ 0',discount:'100%',total_pay:'S/ 0.00',
-    activities:[]},
-  {date:'18/06/2025',in:'08:15',out:'—',total:'Activo',driver:'Carlos López',plate:'LMN-456',consume:'S/ 890',discount:'100%',total_pay:'S/ 0.00',
-    activities:[
-      {hour:'09:00',store:'Samsung Store',cat:'Electrónica',desc:'Compra de accesorios para tienda',amount:'S/ 650.00',kind:'consumo'},
-      {hour:'10:30',store:'McDonald\'s',cat:'Restaurante',desc:'Almuerzo de trabajo',amount:'S/ 95.00',kind:'consumo'},
-      {hour:'12:15',store:'Banco BCP',cat:'Banco',desc:'Trámite bancario',amount:'S/ 0.00',kind:'consumo'},
-      {hour:'13:00',store:'Ripley',cat:'Ropa',desc:'Compra de uniformes',amount:'S/ 145.00',kind:'consumo'},
-    ]},
-  {date:'17/06/2025',in:'14:00',out:'16:30',total:'2h 30m',driver:'Ana Torres',plate:'DEF-321',consume:'S/ 55',discount:'S/ 0',total_pay:'S/ 7.50',
-    activities:[
-      {hour:'14:20',store:'Boticas Arcángel',cat:'Farmacia',desc:'Medicamentos recetados',amount:'S/ 55.00',kind:'consumo'},
-    ]},
-  {date:'17/06/2025',in:'10:00',out:'11:15',total:'1h 15m',driver:'Rosa Mendoza',plate:'JKL-987',consume:'S/ 210',discount:'50%',total_pay:'S/ 2.19',
-    activities:[
-      {hour:'10:15',store:'Cinemark',cat:'Cine',desc:'Función + dulcería',amount:'45 min',kind:'tiempo'},
-      {hour:'11:00',store:'Ripley',cat:'Ropa',desc:'Compra de temporada',amount:'S/ 210.00',kind:'consumo'},
-    ]},
-  {date:'17/06/2025',in:'08:00',out:'13:00',total:'5h 00m',driver:'Pedro Soto',plate:'MNO-147',consume:'S/ 30',discount:'S/ 0',total_pay:'S/ 15.00',
-    activities:[
-      {hour:'08:30',store:'Starbucks',cat:'Cafetería',desc:'Desayuno',amount:'S/ 30.00',kind:'consumo'},
-    ]},
-  {date:'16/06/2025',in:'09:30',out:'11:00',total:'1h 30m',driver:'Lucia Vargas',plate:'PQR-258',consume:'S/ 0',discount:'100%',total_pay:'S/ 0.00',
-    activities:[]},
-  {date:'16/06/2025',in:'12:00',out:'15:30',total:'3h 30m',driver:'Luis Ramírez',plate:'GHI-654',consume:'S/ 80',discount:'S/ 0',total_pay:'S/ 9.33',
-    activities:[
-      {hour:'12:30',store:'Smart Fit',cat:'Gimnasio',desc:'Rutina de pesas',amount:'60 min',kind:'tiempo'},
-      {hour:'14:00',store:'Plaza Vea',cat:'Supermercado',desc:'Compras semanales',amount:'S/ 80.00',kind:'consumo'},
-    ]},
-];
+let HISTORY_DATA = [];
+let historialVisible = [];
 
 let EVENTS_DATA = [];
 
@@ -1211,6 +1176,7 @@ async function init(){
   await cargarDashboardReal();
   await cargarEventosReales();
   await cargarVehiculosReales();
+  await cargarHistorialReal();
 }
 
 // ============================================================
@@ -2452,69 +2418,626 @@ function saveActivity(){
 // ============================================================
 // HISTORY TABLE
 // ============================================================
-function renderHistoryTable(){
-  const tbody=document.getElementById('history-tbody');
-  if(!tbody)return;
-  tbody.innerHTML=HISTORY_DATA.map((h,i)=>`
-    <tr>
-      <td>${h.date}</td><td>${h.in}</td><td>${h.out}</td>
-      <td><span class="badge ${h.total==='Activo'?'badge-green':'badge-gray'}">${h.total}</span></td>
-      <td>${h.driver}</td>
-      <td style="font-family:monospace;color:var(--accent);font-weight:700">${h.plate}</td>
-      <td>${h.consume}</td>
-      <td style="color:var(--green)">${h.discount}</td>
-      <td style="font-weight:700">${h.total_pay}</td>
-      <td>
-        <button class="btn btn-ghost btn-sm" onclick="openHistoryDetail(${i})" title="Ver detalle de la visita">
-          <i class="fa-solid fa-eye"></i> ${h.activities&&h.activities.length?h.activities.length+' compra'+(h.activities.length!==1?'s':''):'Ver'}
-        </button>
-      </td>
-    </tr>
-  `).join('');
+function escaparHtmlHistorial(valor) {
+  return String(valor ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
-function openHistoryDetail(index){
-  const h=HISTORY_DATA[index];
-  if(!h)return;
-  currentVehicle=null;
-  document.getElementById('dp-title').textContent=h.driver;
-  document.getElementById('dp-plate').textContent='Placa: '+h.plate+' · Visita del '+h.date;
-  document.getElementById('dp-add-activity-btn').style.display='none';
 
-  const activities=h.activities||[];
-  const tl=activities.length?activities.map(t=>`
-    <div class="timeline-item">
-      <div class="timeline-dot" style="background:${t.kind==='tiempo'?'var(--purple-bg)':'var(--accent-glow)'};border-color:${t.kind==='tiempo'?'var(--purple)':'var(--accent)'}"><i class="fa-solid ${t.kind==='tiempo'?'fa-clock':'fa-bag-shopping'}" style="color:${t.kind==='tiempo'?'var(--purple)':'var(--accent)'};font-size:12px"></i></div>
-      <div class="timeline-content">
-        <div class="timeline-title">${t.store} · ${t.cat}</div>
-        <div class="timeline-meta">${h.date} ${t.hour} · ${t.desc}</div>
-        <div class="timeline-amount">${t.amount}</div>
+function renderHistoryTable(data = HISTORY_DATA) {
+  const tbody = document.getElementById("history-tbody");
+
+  if (!tbody) {
+    return;
+  }
+
+  historialVisible = Array.isArray(data) ? data : [];
+
+  const contador = document.querySelector(
+    "#page-history .table-header .badge-blue"
+  );
+
+  if (contador) {
+    contador.textContent =
+      `${historialVisible.length} registro${
+        historialVisible.length === 1 ? "" : "s"
+      }`;
+  }
+
+  if (historialVisible.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td
+          colspan="10"
+          style="
+            padding:28px;
+            text-align:center;
+            color:var(--text-muted);
+          "
+        >
+          No existen sesiones que coincidan con los filtros.
+        </td>
+      </tr>
+    `;
+
+    return;
+  }
+
+  tbody.innerHTML = historialVisible.map((historial, indice) => {
+    let claseTiempo = "badge-gray";
+
+    if (historial.status === "Activa") {
+      claseTiempo = "badge-green";
+    }
+
+    if (historial.status === "Penalizada") {
+      claseTiempo = "badge-red";
+    }
+
+    return `
+      <tr>
+        <td>${escaparHtmlHistorial(historial.date)}</td>
+
+        <td>${escaparHtmlHistorial(historial.in)}</td>
+
+        <td>${escaparHtmlHistorial(historial.out)}</td>
+
+        <td>
+          <span class="badge ${claseTiempo}">
+            ${escaparHtmlHistorial(historial.total)}
+          </span>
+        </td>
+
+        <td>${escaparHtmlHistorial(historial.driver)}</td>
+
+        <td
+          style="
+            font-family:monospace;
+            color:var(--accent);
+            font-weight:700;
+          "
+        >
+          ${escaparHtmlHistorial(historial.plate)}
+        </td>
+
+        <td>${escaparHtmlHistorial(historial.consume)}</td>
+
+        <td style="color:var(--green)">
+          ${escaparHtmlHistorial(historial.discount)}
+        </td>
+
+        <td style="font-weight:700">
+          ${escaparHtmlHistorial(historial.total_pay)}
+        </td>
+
+        <td>
+          <button
+            class="btn btn-ghost btn-sm"
+            onclick="openHistoryDetail(${indice})"
+            title="Ver detalle de la sesión"
+          >
+            <i class="fa-solid fa-eye"></i>
+
+            ${
+              historial.activities.length > 0
+                ? `${historial.activities.length} movimiento${
+                    historial.activities.length === 1 ? "" : "s"
+                  }`
+                : "Ver"
+            }
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function openHistoryDetail(index) {
+  const historial = historialVisible[index];
+
+  if (!historial) {
+    return;
+  }
+
+  currentVehicle = null;
+
+  document.getElementById("dp-title").textContent =
+    historial.driver;
+
+  document.getElementById("dp-plate").textContent =
+    `Placa: ${historial.plate} · Visita del ${historial.date}`;
+
+  document.getElementById(
+    "dp-add-activity-btn"
+  ).style.display = "none";
+
+  const actividades = historial.activities || [];
+
+  const lineaTiempo = actividades.length > 0
+    ? actividades.map((actividad) => `
+        <div class="timeline-item">
+          <div
+            class="timeline-dot"
+            style="
+              background:var(--green-bg);
+              border-color:var(--green);
+            "
+          >
+            <i
+              class="fa-solid fa-money-bill-wave"
+              style="
+                color:var(--green);
+                font-size:12px;
+              "
+            ></i>
+          </div>
+
+          <div class="timeline-content">
+            <div class="timeline-title">
+              ${escaparHtmlHistorial(actividad.store)}
+              ·
+              ${escaparHtmlHistorial(actividad.cat)}
+            </div>
+
+            <div class="timeline-meta">
+              ${escaparHtmlHistorial(historial.date)}
+              ${escaparHtmlHistorial(actividad.hour)}
+              ·
+              ${escaparHtmlHistorial(actividad.desc)}
+            </div>
+
+            <div class="timeline-amount">
+              ${escaparHtmlHistorial(actividad.amount)}
+            </div>
+          </div>
+        </div>
+      `).join("")
+    : `
+        <div class="empty-state" style="padding:20px">
+          <i class="fa-solid fa-receipt"></i>
+
+          <div style="font-size:12px;margin-top:8px">
+            No existen pagos asociados a esta sesión.
+          </div>
+        </div>
+      `;
+
+  document.getElementById("dp-body").innerHTML = `
+    <div class="info-block">
+      <div class="info-block-title">
+        <i
+          class="fa-solid fa-user"
+          style="color:var(--accent)"
+        ></i>
+        Datos de la Visita
+      </div>
+
+      <div class="info-row">
+        <span class="info-key">Conductor</span>
+        <span class="info-val">
+          ${escaparHtmlHistorial(historial.driver)}
+        </span>
+      </div>
+
+      <div class="info-row">
+        <span class="info-key">Placa</span>
+        <span
+          class="info-val"
+          style="
+            font-family:monospace;
+            color:var(--accent);
+          "
+        >
+          ${escaparHtmlHistorial(historial.plate)}
+        </span>
+      </div>
+
+      <div class="info-row">
+        <span class="info-key">Tipo de vehículo</span>
+        <span class="info-val">
+          ${escaparHtmlHistorial(historial.type)}
+        </span>
+      </div>
+
+      <div class="info-row">
+        <span class="info-key">Estado</span>
+        <span class="info-val">
+          ${escaparHtmlHistorial(historial.status)}
+        </span>
+      </div>
+
+      <div class="info-row">
+        <span class="info-key">Fecha</span>
+        <span class="info-val">
+          ${escaparHtmlHistorial(historial.date)}
+        </span>
+      </div>
+
+      <div class="info-row">
+        <span class="info-key">Hora de ingreso</span>
+        <span class="info-val">
+          ${escaparHtmlHistorial(historial.in)}
+        </span>
+      </div>
+
+      <div class="info-row">
+        <span class="info-key">Hora de salida</span>
+        <span class="info-val">
+          ${escaparHtmlHistorial(historial.out)}
+        </span>
+      </div>
+
+      <div class="info-row">
+        <span class="info-key">Tiempo total</span>
+        <span class="info-val">
+          ${escaparHtmlHistorial(historial.total)}
+        </span>
       </div>
     </div>
-  `).join('') : `<div class="empty-state" style="padding:20px"><i class="fa-solid fa-bag-shopping"></i><div style="font-size:12px;margin-top:8px">Sin compras registradas en esta visita</div></div>`;
 
-  document.getElementById('dp-body').innerHTML=`
     <div class="info-block">
-      <div class="info-block-title"><i class="fa-solid fa-user" style="color:var(--accent)"></i> Datos de la Visita</div>
-      <div class="info-row"><span class="info-key">Conductor</span><span class="info-val">${h.driver}</span></div>
-      <div class="info-row"><span class="info-key">Placa</span><span class="info-val" style="font-family:monospace;color:var(--accent)">${h.plate}</span></div>
-      <div class="info-row"><span class="info-key">Fecha</span><span class="info-val">${h.date}</span></div>
-      <div class="info-row"><span class="info-key">Hora de ingreso</span><span class="info-val">${h.in}</span></div>
-      <div class="info-row"><span class="info-key">Hora de salida</span><span class="info-val">${h.out}</span></div>
-      <div class="info-row"><span class="info-key">Tiempo total</span><span class="info-val">${h.total}</span></div>
+      <div class="info-block-title">
+        <i
+          class="fa-solid fa-receipt"
+          style="color:var(--accent)"
+        ></i>
+        Resumen de Pago
+      </div>
+
+      <div class="info-row">
+        <span class="info-key">Consumo registrado</span>
+        <span class="info-val">
+          ${escaparHtmlHistorial(historial.consume)}
+        </span>
+      </div>
+
+      <div class="info-row">
+        <span class="info-key">Descuento aplicado</span>
+        <span
+          class="info-val"
+          style="color:var(--green)"
+        >
+          ${escaparHtmlHistorial(historial.discount)}
+        </span>
+      </div>
+
+      <div class="info-row">
+        <span class="info-key">
+          Total pagado por estacionamiento
+        </span>
+
+        <span
+          class="info-val"
+          style="
+            color:var(--accent);
+            font-weight:700;
+          "
+        >
+          ${escaparHtmlHistorial(historial.total_pay)}
+        </span>
+      </div>
     </div>
+
     <div class="info-block">
-      <div class="info-block-title"><i class="fa-solid fa-receipt" style="color:var(--accent)"></i> Resumen de Pago</div>
-      <div class="info-row"><span class="info-key">Consumo registrado</span><span class="info-val">${h.consume}</span></div>
-      <div class="info-row"><span class="info-key">Descuento aplicado</span><span class="info-val" style="color:var(--green)">${h.discount}</span></div>
-      <div class="info-row"><span class="info-key">Total pagado por estacionamiento</span><span class="info-val" style="color:var(--accent);font-weight:700">${h.total_pay}</span></div>
-    </div>
-    <div class="info-block">
-      <div class="info-block-title"><i class="fa-solid fa-timeline" style="color:var(--accent)"></i> Compras y Visitas Durante la Estadía</div>
-      <div class="timeline">${tl}</div>
+      <div class="info-block-title">
+        <i
+          class="fa-solid fa-timeline"
+          style="color:var(--accent)"
+        ></i>
+        Movimientos de la Sesión
+      </div>
+
+      <div class="timeline">
+        ${lineaTiempo}
+      </div>
     </div>
   `;
-  document.getElementById('detail-panel').classList.add('open');
+
+  document
+    .getElementById("detail-panel")
+    .classList.add("open");
+}
+
+function convertirFechaHistorial(fechaHora) {
+  if (!fechaHora) {
+    return {
+      fecha: "—",
+      hora: "—",
+      fechaISO: ""
+    };
+  }
+
+  const fecha = new Date(
+    String(fechaHora).replace(" ", "T")
+  );
+
+  if (Number.isNaN(fecha.getTime())) {
+    return {
+      fecha: "—",
+      hora: "—",
+      fechaISO: ""
+    };
+  }
+
+  return {
+    fecha: new Intl.DateTimeFormat("es-PE", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric"
+    }).format(fecha),
+
+    hora: new Intl.DateTimeFormat("es-PE", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true
+    }).format(fecha),
+
+    fechaISO: String(fechaHora).slice(0, 10)
+  };
+}
+
+
+function formatearDuracionHistorial(minutos, estado) {
+  if (estado === "Activa") {
+    return "Activo";
+  }
+
+  const totalMinutos = Math.max(
+    0,
+    Number(minutos) || 0
+  );
+
+  if (totalMinutos < 60) {
+    return `${totalMinutos} min`;
+  }
+
+  const horas = Math.floor(totalMinutos / 60);
+  const minutosRestantes = totalMinutos % 60;
+
+  return `${horas}h ${minutosRestantes}m`;
+}
+
+
+function aplicarFiltrosHistorial() {
+  const placa = (
+    document.getElementById("h-plate")?.value || ""
+  ).trim().toLowerCase();
+
+  const conductor = (
+    document.getElementById("h-driver")?.value || ""
+  ).trim().toLowerCase();
+
+  const fechaInicio =
+    document.getElementById("h-from")?.value || "";
+
+  const fechaFin =
+    document.getElementById("h-to")?.value || "";
+
+  const estado =
+    document.getElementById("h-status")?.value || "";
+
+  const tipo =
+    document.getElementById("h-type")?.value || "";
+
+  const filtrados = HISTORY_DATA.filter((historial) => {
+    const coincidePlaca =
+      !placa ||
+      historial.plate.toLowerCase().includes(placa);
+
+    const coincideConductor =
+      !conductor ||
+      historial.driver
+        .toLowerCase()
+        .includes(conductor);
+
+    const coincideInicio =
+      !fechaInicio ||
+      historial.dateISO >= fechaInicio;
+
+    const coincideFin =
+      !fechaFin ||
+      historial.dateISO <= fechaFin;
+
+    const coincideEstado =
+      !estado ||
+      historial.status === estado;
+
+    const coincideTipo =
+      !tipo ||
+      historial.type === tipo;
+
+    return (
+      coincidePlaca &&
+      coincideConductor &&
+      coincideInicio &&
+      coincideFin &&
+      coincideEstado &&
+      coincideTipo
+    );
+  });
+
+  renderHistoryTable(filtrados);
+
+  showToast(
+    "success",
+    `${filtrados.length} registro(s) encontrado(s)`,
+    "fa-filter"
+  );
+}
+
+
+function limpiarFiltrosHistorial() {
+  [
+    "h-plate",
+    "h-driver",
+    "h-from",
+    "h-to",
+    "h-status",
+    "h-type"
+  ].forEach((id) => {
+    const elemento = document.getElementById(id);
+
+    if (elemento) {
+      elemento.value = "";
+    }
+  });
+
+  renderHistoryTable();
+
+  showToast(
+    "info",
+    "Filtros limpiados",
+    "fa-xmark"
+  );
+}
+
+
+async function cargarHistorialReal() {
+  try {
+    const [
+      respuestaSesiones,
+      respuestaPagos
+    ] = await Promise.all([
+      fetch("/api/v2/historial/sesiones?limite=200"),
+      fetch("/api/v2/historial/pagos?limite=200")
+    ]);
+
+    if (
+      !respuestaSesiones.ok ||
+      !respuestaPagos.ok
+    ) {
+      throw new Error(
+        "No se pudo obtener el historial"
+      );
+    }
+
+    const datosSesiones =
+      await respuestaSesiones.json();
+
+    const datosPagos =
+      await respuestaPagos.json();
+
+    if (!datosSesiones.ok || !datosPagos.ok) {
+      throw new Error(
+        "Las API de historial devolvieron un error"
+      );
+    }
+
+    const pagosPorSesion = new Map();
+
+    datosPagos.pagos.forEach((pago) => {
+      const lista =
+        pagosPorSesion.get(pago.idSesion) || [];
+
+      lista.push(pago);
+
+      pagosPorSesion.set(pago.idSesion, lista);
+    });
+
+    HISTORY_DATA = datosSesiones.sesiones.map(
+      (sesion) => {
+        const ingreso = convertirFechaHistorial(
+          sesion.fechaHoraIngreso
+        );
+
+        const salida = convertirFechaHistorial(
+          sesion.fechaHoraSalida
+        );
+
+        const pagos =
+          pagosPorSesion.get(sesion.idSesion) || [];
+
+        return {
+          idSesion: sesion.idSesion,
+          date: ingreso.fecha,
+          dateISO: ingreso.fechaISO,
+          in: ingreso.hora,
+          out: sesion.fechaHoraSalida
+            ? salida.hora
+            : "—",
+
+          total: formatearDuracionHistorial(
+            sesion.tiempoTotalMinutos,
+            sesion.estado
+          ),
+
+          driver: sesion.conductor,
+          plate: sesion.placa,
+          type: sesion.tipoVehiculo,
+          status: sesion.estado,
+
+          consume:
+            `S/ ${Number(
+              sesion.consumoRegistrado
+            ).toFixed(2)}`,
+
+          discount:
+            `S/ ${Number(
+              sesion.montoDescuento
+            ).toFixed(2)}`,
+
+          total_pay:
+            `S/ ${Number(
+              sesion.totalPagado
+            ).toFixed(2)}`,
+
+          activities: pagos.map((pago) => {
+            const fechaPago =
+              convertirFechaHistorial(
+                pago.fechaPago
+              );
+
+            return {
+              kind: "pago",
+              store:
+                pago.observaciones ||
+                "Pago de estacionamiento",
+
+              cat:
+                pago.metodoPago ||
+                "Método no indicado",
+
+              hour: fechaPago.hora,
+
+              desc:
+                pago.referencia ||
+                pago.estado,
+
+              amount:
+                `S/ ${Number(
+                  pago.monto
+                ).toFixed(2)}`
+            };
+          })
+        };
+      }
+    );
+
+    renderHistoryTable();
+
+    console.log(
+      "Historial actualizado con datos reales",
+      HISTORY_DATA
+    );
+  } catch (error) {
+    console.error(
+      "Error al cargar el historial real:",
+      error
+    );
+
+    HISTORY_DATA = [];
+    renderHistoryTable();
+
+    showToast(
+      "error",
+      "No se pudo cargar el historial",
+      "fa-triangle-exclamation"
+    );
+  }
 }
 
 // ============================================================
