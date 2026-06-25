@@ -1210,7 +1210,7 @@ let charts = {};
 // ============================================================
 // INIT
 // ============================================================
-function init(){
+async function init(){
   renderParkingMap();
   renderEventsFeed();
   renderRankings();
@@ -1224,6 +1224,245 @@ function init(){
   renderStores();
   initCharts();
   updateThemeUI();
+
+  await cargarDashboardReal();
+}
+
+// ============================================================
+// DATOS REALES DEL DASHBOARD
+// ============================================================
+
+function actualizarKpiDashboard(
+  etiqueta,
+  valor,
+  detalle = "Datos obtenidos de MySQL"
+) {
+  const tarjetas = Array.from(
+    document.querySelectorAll(".kpi-card")
+  );
+
+  const tarjeta = tarjetas.find((elemento) => {
+    const label = elemento.querySelector(".kpi-label");
+
+    return (
+      label &&
+      label.textContent.trim().toUpperCase() ===
+        etiqueta.toUpperCase()
+    );
+  });
+
+  if (!tarjeta) {
+    return;
+  }
+
+  const valorElemento =
+    tarjeta.querySelector(".kpi-value");
+
+  const detalleElemento =
+    tarjeta.querySelector(".kpi-sub");
+
+  const tendenciaElemento =
+    tarjeta.querySelector(".kpi-trend");
+
+  if (valorElemento) {
+    valorElemento.textContent = valor;
+  }
+
+  if (detalleElemento) {
+    detalleElemento.textContent = detalle;
+  }
+
+  // Oculta porcentajes simulados como +100 % o +80 %.
+  if (tendenciaElemento) {
+    tendenciaElemento.style.display = "none";
+  }
+}
+
+
+function formatearDuracionDashboard(minutos) {
+  const totalMinutos = Math.max(
+    0,
+    Number(minutos) || 0
+  );
+
+  if (totalMinutos < 60) {
+    return `${totalMinutos} min`;
+  }
+
+  const horas = Math.floor(totalMinutos / 60);
+  const minutosRestantes = totalMinutos % 60;
+
+  return `${horas}h ${minutosRestantes}m`;
+}
+
+
+function obtenerClaseEstadoEspacio(estado) {
+  const clases = {
+    Libre: "spot-free",
+    Ocupado: "spot-occupied",
+    Reservado: "spot-reserved",
+    Mantenimiento: "spot-maintenance"
+  };
+
+  return clases[estado] || "spot-free";
+}
+
+
+async function cargarDashboardReal() {
+  try {
+    const [
+      respuestaResumen,
+      respuestaEspacios
+    ] = await Promise.all([
+      fetch("/api/v2/dashboard/resumen"),
+      fetch("/api/v2/dashboard/espacios")
+    ]);
+
+    if (
+      !respuestaResumen.ok ||
+      !respuestaEspacios.ok
+    ) {
+      throw new Error(
+        "El servidor no pudo entregar los datos del dashboard"
+      );
+    }
+
+    const datosResumen =
+      await respuestaResumen.json();
+
+    const datosEspacios =
+      await respuestaEspacios.json();
+
+    if (!datosResumen.ok || !datosEspacios.ok) {
+      throw new Error(
+        "Las API devolvieron una respuesta no válida"
+      );
+    }
+
+    const resumen = datosResumen.resumen;
+
+    // Tarjetas que ya cuentan con datos reales.
+    actualizarKpiDashboard(
+      "ESPACIOS TOTALES",
+      resumen.totalEspacios,
+      "Capacidad total"
+    );
+
+    actualizarKpiDashboard(
+      "ESPACIOS OCUPADOS",
+      resumen.espaciosOcupados,
+      "Ocupados actualmente"
+    );
+
+    actualizarKpiDashboard(
+      "ESPACIOS DISPONIBLES",
+      resumen.espaciosLibres,
+      "Disponibles actualmente"
+    );
+
+    actualizarKpiDashboard(
+      "VEHÍCULOS ACTIVOS",
+      resumen.vehiculosActivos,
+      "En el estacionamiento ahora"
+    );
+
+    actualizarKpiDashboard(
+      "INGRESOS DEL DÍA",
+      `S/ ${Number(
+        resumen.ingresosDelDia
+      ).toFixed(2)}`,
+      "Pagos registrados hoy"
+    );
+
+    actualizarKpiDashboard(
+      "TIEMPO PROMEDIO",
+      formatearDuracionDashboard(
+        resumen.permanenciaPromedioMinutos
+      ),
+      "Permanencia promedio"
+    );
+
+    // Estas métricas todavía no tienen una API propia.
+    // Se ocultan los valores simulados para no mostrar datos falsos.
+    actualizarKpiDashboard(
+      "HORAS EXONERADAS",
+      "—",
+      "Pendiente de cálculo"
+    );
+
+    actualizarKpiDashboard(
+      "DESCUENTOS APLICADOS",
+      "—",
+      "Pendiente de cálculo"
+    );
+
+    actualizarKpiDashboard(
+      "USUARIOS VIP",
+      "—",
+      "Pendiente de cálculo"
+    );
+
+    actualizarKpiDashboard(
+      "CONSUMO REGISTRADO",
+      "—",
+      "Pendiente de cálculo"
+    );
+
+    // Eliminar el mapa simulado anterior.
+    Object.keys(SPOT_STATE).forEach((clave) => {
+      delete SPOT_STATE[clave];
+    });
+
+    Object.keys(SPOT_VEHICLE_MAP).forEach((clave) => {
+      delete SPOT_VEHICLE_MAP[clave];
+    });
+
+    // Registrar en el mapa los estados reales de MySQL.
+    datosEspacios.espacios.forEach((espacio) => {
+      SPOT_STATE[espacio.numero] =
+        obtenerClaseEstadoEspacio(espacio.estado);
+    });
+
+    // Volver a dibujar el gemelo digital.
+    renderParkingMap();
+
+    const contadorMonitor =
+      document.getElementById("v-feed-count");
+
+    if (contadorMonitor) {
+      contadorMonitor.textContent =
+        `${resumen.vehiculosActivos} activos · actualizado ahora`;
+    }
+
+    const subtituloDashboard =
+      document.querySelector(
+        "#page-dashboard .section-sub"
+      );
+
+    if (subtituloDashboard) {
+      subtituloDashboard.textContent =
+        "Visión general del sistema · Actualizado ahora";
+    }
+
+    console.log(
+      "Dashboard actualizado con datos reales",
+      {
+        resumen,
+        espacios: datosEspacios.espacios
+      }
+    );
+  } catch (error) {
+    console.error(
+      "Error al cargar el dashboard real:",
+      error
+    );
+
+    showToast(
+      "error",
+      "No se pudieron cargar los datos reales",
+      "fa-triangle-exclamation"
+    );
+  }
 }
 
 // ============================================================
