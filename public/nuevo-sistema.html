@@ -1077,16 +1077,7 @@ tbody tr:hover{background:var(--bg-hover)}
 // ============================================================
 // DATA
 // ============================================================
-const VEHICLES_DATA = [
-  {plate:'ABC-123',owner:'Juan Pérez',type:'Auto',role:'VIP',status:'Activo',revenue:'S/ 1,240',benefits:'14',entry:'10:20 AM',time:'1h 35m',color:'Blanco',brand:'Toyota',model:'Corolla',doc:'47123456',phone:'+51 987 654 321',email:'juan@gmail.com'},
-  {plate:'XYZ-789',owner:'María García',type:'SUV',role:'Trabajador',status:'Activo',revenue:'S/ 0',benefits:'38',entry:'09:05 AM',time:'2h 50m',color:'Negro',brand:'Hyundai',model:'Tucson',doc:'52365489',phone:'+51 945 123 987',email:'mgarcia@empresa.pe'},
-  {plate:'LMN-456',owner:'Carlos López',type:'Camioneta',role:'Propietario',status:'Activo',revenue:'S/ 890',benefits:'52',entry:'08:15 AM',time:'3h 40m',color:'Plata',brand:'Ford',model:'F-150',doc:'29874521',phone:'+51 912 456 789',email:'clopez@tienda.pe'},
-  {plate:'DEF-321',owner:'Ana Torres',type:'Auto',role:'Común',status:'Inactivo',revenue:'S/ 340',benefits:'3',entry:'—',time:'—',color:'Rojo',brand:'Kia',model:'Rio',doc:'71234567',phone:'+51 974 321 654',email:'atorres@hotmail.com'},
-  {plate:'GHI-654',owner:'Luis Ramírez',type:'Moto',role:'Proveedor',status:'Activo',revenue:'S/ 120',benefits:'1',entry:'11:45 AM',time:'0h 30m',color:'Azul',brand:'Honda',model:'CB500',doc:'61234789',phone:'+51 923 654 123',email:'lramirez@proveedor.com'},
-  {plate:'JKL-987',owner:'Rosa Mendoza',type:'Auto',role:'VIP',status:'Activo',revenue:'S/ 2,100',benefits:'28',entry:'07:30 AM',time:'5h 15m',color:'Blanco',brand:'Mercedes',model:'C200',doc:'47896325',phone:'+51 987 123 456',email:'rmendoza@executive.pe'},
-  {plate:'MNO-147',owner:'Pedro Soto',type:'SUV',role:'Común',status:'Bloqueado',revenue:'S/ 45',benefits:'0',entry:'—',time:'—',color:'Gris',brand:'Nissan',model:'Qashqai',doc:'36512478',phone:'+51 945 789 321',email:'psoto@personal.com'},
-  {plate:'PQR-258',owner:'Lucia Vargas',type:'Auto',role:'Trabajador',status:'Activo',revenue:'S/ 0',benefits:'45',entry:'08:00 AM',time:'4h 15m',color:'Verde',brand:'Volkswagen',model:'Golf',doc:'58964123',phone:'+51 912 369 852',email:'lvargas@trabajo.pe'},
-];
+const VEHICLES_DATA = [];
 
 const HISTORY_DATA = [
   {date:'18/06/2025',in:'10:20',out:'12:05',total:'1h 45m',driver:'Juan Pérez',plate:'ABC-123',consume:'S/ 120',discount:'S/ 10',total_pay:'S/ 5.15',
@@ -1219,6 +1210,7 @@ async function init(){
 
   await cargarDashboardReal();
   await cargarEventosReales();
+  await cargarVehiculosReales();
 }
 
 // ============================================================
@@ -2005,7 +1997,7 @@ function renderVehiclesTable(data){
       <td><span class="badge ${roleColors[v.role]||'badge-gray'}">${v.role}</span></td>
       <td><span class="badge ${statusColors[v.status]||'badge-gray'}"><span class="status-dot ${v.status==='Activo'?'dot-green':v.status==='Bloqueado'?'dot-red':'dot-gray'}"></span>${v.status}</span></td>
       <td style="font-weight:600">${v.revenue}</td>
-      <td>${v.benefits} aplicados</td>
+      <td>${v.benefits}</td>
       <td>
         <div style="display:flex;gap:4px">
           <button class="btn btn-ghost btn-sm" onclick="openDetailPanel(${JSON.stringify(v).replace(/"/g,"'")})" title="Ver detalle"><i class="fa-solid fa-eye"></i></button>
@@ -2030,27 +2022,85 @@ function filterVehicles(){
   renderVehiclesTable(filtered);
 }
 
-function deleteVehicle(plate){
-  vehiclesData=vehiclesData.filter(v=>v.plate!==plate);
-  renderVehiclesTable();
-  showToast('warning','Vehículo eliminado: '+plate,'fa-trash');
+function deleteVehicle(plate) {
+  showToast(
+    "warning",
+    `La eliminación de ${plate} todavía no está habilitada`,
+    "fa-triangle-exclamation"
+  );
 }
 
 // ============================================================
 // VEHICLES FEED (Monitor)
 // ============================================================
-function renderVehiclesFeed(){
-  const feed=document.getElementById('vehicles-feed');
-  if(!feed)return;
-  const active=vehiclesData.filter(v=>v.status==='Activo');
-  feed.innerHTML=active.map((v,i)=>`
-    <div class="vehicle-item ${i===0?'selected':''}" onclick="selectMonitorVehicle(this,'${v.plate}')">
-      <div class="v-plate">${v.plate}</div>
-      <div class="v-name">${v.owner}</div>
-      <div class="v-meta"><span>Ingreso: ${v.entry}</span><span class="v-time">${v.time}</span></div>
-      <div style="margin-top:3px"><span class="badge badge-green" style="font-size:10px">Activo</span></div>
+function renderVehiclesFeed() {
+  const feed = document.getElementById("vehicles-feed");
+
+  if (!feed) {
+    return;
+  }
+
+  const activos = vehiclesData.filter(
+    (vehiculo) => vehiculo.inside
+  );
+
+  if (activos.length === 0) {
+    feed.innerHTML = `
+      <div style="
+        padding:24px 14px;
+        text-align:center;
+        color:var(--text-muted);
+        font-size:12px;
+      ">
+        <i
+          class="fa-solid fa-square-parking"
+          style="
+            display:block;
+            font-size:24px;
+            margin-bottom:10px;
+          "
+        ></i>
+
+        No hay vehículos dentro del estacionamiento.
+      </div>
+    `;
+
+    return;
+  }
+
+  feed.innerHTML = activos.map((vehiculo, indice) => `
+    <div
+      class="vehicle-item ${indice === 0 ? "selected" : ""}"
+      onclick="selectMonitorVehicle(this, '${vehiculo.plate}')"
+    >
+      <div class="v-plate">
+        ${vehiculo.plate}
+      </div>
+
+      <div class="v-name">
+        ${vehiculo.owner}
+      </div>
+
+      <div class="v-meta">
+        <span>
+          Ingreso: ${vehiculo.entry}
+        </span>
+
+        <span class="v-time">
+          ${vehiculo.time}
+        </span>
+      </div>
+
+      <div style="margin-top:3px">
+        <span
+          class="badge badge-green"
+          style="font-size:10px"
+        >
+          Dentro
+        </span>
+      </div>
     </div>
-  `).join('');
+  `).join("");
 }
 
 function selectMonitorVehicle(el,plate){
@@ -2058,6 +2108,209 @@ function selectMonitorVehicle(el,plate){
   el.classList.add('selected');
   const v=vehiclesData.find(x=>x.plate===plate);
   if(v)openDetailPanel(v);
+}
+
+function normalizarRolVehiculo(rol) {
+  const equivalencias = {
+    "Cliente VIP": "VIP",
+    "Usuario Comun": "Común",
+    "Propietario de Tienda": "Propietario",
+    "Empresario Frecuente": "Empresario",
+    "Invitado Especial": "Invitado",
+    "Trabajador": "Trabajador",
+    "Proveedor": "Proveedor"
+  };
+
+  return equivalencias[rol] || rol || "Común";
+}
+
+
+function formatearHoraIngresoVehiculo(fechaHora) {
+  if (!fechaHora) {
+    return "—";
+  }
+
+  const fecha = new Date(fechaHora);
+
+  if (Number.isNaN(fecha.getTime())) {
+    return "—";
+  }
+
+  return new Intl.DateTimeFormat("es-PE", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true
+  }).format(fecha);
+}
+
+
+function formatearPermanenciaVehiculo(fechaHora) {
+  if (!fechaHora) {
+    return "—";
+  }
+
+  const fechaIngreso = new Date(fechaHora);
+
+  if (Number.isNaN(fechaIngreso.getTime())) {
+    return "—";
+  }
+
+  const minutosTotales = Math.max(
+    0,
+    Math.floor(
+      (Date.now() - fechaIngreso.getTime()) / 60000
+    )
+  );
+
+  if (minutosTotales < 60) {
+    return `${minutosTotales} min`;
+  }
+
+  const horas = Math.floor(minutosTotales / 60);
+  const minutos = minutosTotales % 60;
+
+  return `${horas}h ${minutos}m`;
+}
+
+
+function describirBeneficiosVehiculo(vehiculo) {
+  if (vehiculo.exoneracionTotal) {
+    return "Exoneración total";
+  }
+
+  const beneficios = [];
+
+  if (Number(vehiculo.horasGratis) > 0) {
+    beneficios.push(
+      `${Number(vehiculo.horasGratis)} h gratis`
+    );
+  }
+
+  if (Number(vehiculo.porcentajeDescuento) > 0) {
+    beneficios.push(
+      `${Number(vehiculo.porcentajeDescuento)}% descuento`
+    );
+  }
+
+  return beneficios.length > 0
+    ? beneficios.join(" · ")
+    : "Sin beneficios";
+}
+
+
+async function cargarVehiculosReales() {
+  try {
+    const respuesta = await fetch("/api/v2/vehiculos");
+
+    if (!respuesta.ok) {
+      throw new Error(
+        "No se pudieron obtener los vehículos"
+      );
+    }
+
+    const datos = await respuesta.json();
+
+    if (!datos.ok) {
+      throw new Error(
+        datos.mensaje ||
+          "La respuesta de vehículos no es válida"
+      );
+    }
+
+    vehiclesData = datos.vehiculos.map((vehiculo) => {
+      const dentroDelEstacionamiento = Boolean(
+        vehiculo.dentroDelEstacionamiento
+      );
+
+      return {
+        id: vehiculo.idVehiculo,
+        plate: vehiculo.placa,
+        owner: vehiculo.conductor,
+        type: vehiculo.tipo,
+        role: normalizarRolVehiculo(vehiculo.rol),
+        status: vehiculo.estado,
+
+        revenue: "—",
+        benefits: describirBeneficiosVehiculo(vehiculo),
+
+        entry: dentroDelEstacionamiento
+          ? formatearHoraIngresoVehiculo(
+              vehiculo.fechaHoraIngreso
+            )
+          : "—",
+
+        time: dentroDelEstacionamiento
+          ? formatearPermanenciaVehiculo(
+              vehiculo.fechaHoraIngreso
+            )
+          : "—",
+
+        color: vehiculo.color || "No especificado",
+        brand: vehiculo.marca || "No especificada",
+        model: vehiculo.modelo || "No especificado",
+        doc: vehiculo.documento || "—",
+        phone: vehiculo.telefono || "—",
+        email: vehiculo.correo || "—",
+
+        uidRfid: vehiculo.uidRfid,
+        saldoVirtual:
+          vehiculo.saldoVirtual === null
+            ? null
+            : Number(vehiculo.saldoVirtual),
+
+        estadoTarjeta: vehiculo.estadoTarjeta,
+        inside: dentroDelEstacionamiento,
+        idSesion: vehiculo.idSesionActiva,
+        idEspacio: vehiculo.idEspacioActual,
+        estadoSesion: vehiculo.estadoSesion
+      };
+    });
+
+    renderVehiclesTable();
+    renderVehiclesFeed();
+
+    const totalVip = vehiclesData.filter(
+      (vehiculo) => vehiculo.role === "VIP"
+    ).length;
+
+    actualizarKpiDashboard(
+      "USUARIOS VIP",
+      totalVip,
+      "Vehículos registrados como VIP"
+    );
+
+    const contadorMonitor =
+      document.getElementById("v-feed-count");
+
+    if (contadorMonitor) {
+      const totalDentro = vehiclesData.filter(
+        (vehiculo) => vehiculo.inside
+      ).length;
+
+      contadorMonitor.textContent =
+        `${totalDentro} activos · actualizado ahora`;
+    }
+
+    console.log(
+      "Vehículos actualizados con datos reales",
+      vehiclesData
+    );
+  } catch (error) {
+    console.error(
+      "Error al cargar los vehículos reales:",
+      error
+    );
+
+    vehiclesData = [];
+    renderVehiclesTable();
+    renderVehiclesFeed();
+
+    showToast(
+      "error",
+      "No se pudieron cargar los vehículos",
+      "fa-triangle-exclamation"
+    );
+  }
 }
 
 // ============================================================
