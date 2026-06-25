@@ -5,6 +5,9 @@ const db = require("./config/db");
 const initDatabase = require("./config/initDb");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const vehiculoRoutes = require("./routes/vehiculoRoutes");
+const estacionamientoRoutes = require(
+  "./routes/estacionamientoRoutes"
+);
 
 const app = express();
 
@@ -13,6 +16,10 @@ app.use(express.json());
 app.use(express.static("public"));
 app.use("/api/v2/dashboard", dashboardRoutes);
 app.use("/api/v2/vehiculos", vehiculoRoutes);
+app.use(
+  "/api/v2/estacionamiento",
+  estacionamientoRoutes
+);
 
 const PORT = process.env.PORT || 3000;
 
