@@ -8,6 +8,7 @@ const vehiculoRoutes = require("./routes/vehiculoRoutes");
 const estacionamientoRoutes = require(
   "./routes/estacionamientoRoutes"
 );
+const historialRoutes = require("./routes/historialRoutes");
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.use(
   "/api/v2/estacionamiento",
   estacionamientoRoutes
 );
+app.use("/api/v2/historial", historialRoutes);
 
 const PORT = process.env.PORT || 3000;
 
