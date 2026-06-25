@@ -1,0 +1,2134 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Parking IoT — Sistema Inteligente de Gestión</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --bg-primary: #0f1117;
+  --bg-secondary: #161b27;
+  --bg-tertiary: #1e2535;
+  --bg-card: #1a2035;
+  --bg-hover: #242b3d;
+  --border: rgba(255,255,255,0.07);
+  --border-hover: rgba(255,255,255,0.13);
+  --text-primary: #e8eaf0;
+  --text-secondary: #8b92a5;
+  --text-muted: #5a6175;
+  --accent: #4f8ef7;
+  --accent-glow: rgba(79,142,247,0.15);
+  --accent-hover: #6ba0ff;
+  --green: #22c55e;
+  --green-bg: rgba(34,197,94,0.12);
+  --red: #ef4444;
+  --red-bg: rgba(239,68,68,0.12);
+  --amber: #f59e0b;
+  --amber-bg: rgba(245,158,11,0.12);
+  --purple: #a78bfa;
+  --purple-bg: rgba(167,139,250,0.12);
+  --teal: #14b8a6;
+  --teal-bg: rgba(20,184,166,0.12);
+  --sidebar-w: 240px;
+  --sidebar-collapsed: 64px;
+  --header-h: 60px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+  --transition: 0.18s ease;
+}
+[data-theme="light"] {
+  --bg-primary: #f4f6fb;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #eef1f8;
+  --bg-card: #ffffff;
+  --bg-hover: #f0f3fa;
+  --border: rgba(0,0,0,0.07);
+  --border-hover: rgba(0,0,0,0.13);
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
+  --accent: #2563eb;
+  --accent-glow: rgba(37,99,235,0.1);
+  --accent-hover: #1d4ed8;
+  --green: #16a34a;
+  --green-bg: rgba(22,163,74,0.1);
+  --red: #dc2626;
+  --red-bg: rgba(220,38,38,0.1);
+  --amber: #d97706;
+  --amber-bg: rgba(217,119,6,0.1);
+  --purple: #7c3aed;
+  --purple-bg: rgba(124,58,237,0.1);
+  --teal: #0f766e;
+  --teal-bg: rgba(15,118,110,0.1);
+  --shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Inter',system-ui,sans-serif;font-size:14px;background:var(--bg-primary);color:var(--text-primary);overflow:hidden}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;border:none;background:none;font-family:inherit;font-size:inherit;color:inherit}
+input,select,textarea{font-family:inherit;font-size:inherit;color:var(--text-primary);background:var(--bg-tertiary);border:1px solid var(--border);border-radius:var(--radius-sm);outline:none;transition:border var(--transition)}
+input:focus,select:focus{border-color:var(--accent)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+/* =============== LAYOUT =============== */
+#app{display:flex;height:100vh;overflow:hidden}
+#login-screen{display:flex;width:100%;height:100%;position:fixed;inset:0;z-index:1000;background:var(--bg-primary)}
+#main-layout{display:flex;flex:1;height:100%;overflow:hidden}
+/* =============== SIDEBAR =============== */
+#sidebar{width:var(--sidebar-w);min-width:var(--sidebar-w);height:100%;background:var(--bg-secondary);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:width var(--transition),min-width var(--transition);overflow:hidden;position:relative;z-index:100}
+#sidebar.collapsed{width:var(--sidebar-collapsed);min-width:var(--sidebar-collapsed)}
+#sidebar.collapsed .nav-label,.sidebar-section-title,.sidebar-logo-text,.sidebar-user-info{opacity:0;pointer-events:none;width:0;overflow:hidden;white-space:nowrap}
+#sidebar.collapsed .sidebar-logo{justify-content:center}
+#sidebar.collapsed .nav-item{justify-content:center;padding:0 0 0 0}
+.sidebar-logo{display:flex;align-items:center;gap:10px;padding:18px 16px 14px;border-bottom:1px solid var(--border);min-height:var(--header-h)}
+.sidebar-logo-icon{width:32px;height:32px;background:var(--accent);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff;font-size:18px}
+.sidebar-logo-text{font-size:13px;font-weight:600;line-height:1.2;white-space:nowrap;transition:opacity var(--transition)}
+.sidebar-logo-text span{display:block;color:var(--text-secondary);font-weight:400;font-size:11px}
+.sidebar-nav{flex:1;overflow-y:auto;padding:10px 8px;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.sidebar-section-title{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);padding:8px 8px 4px;transition:opacity var(--transition)}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--radius-sm);cursor:pointer;transition:background var(--transition),color var(--transition);color:var(--text-secondary);font-size:13px;white-space:nowrap;position:relative}
+.nav-item:hover{background:var(--bg-hover);color:var(--text-primary)}
+.nav-item.active{background:var(--accent-glow);color:var(--accent)}
+.nav-item i{font-size:18px;flex-shrink:0;width:20px;text-align:center}
+.nav-item .badge{background:var(--red);color:#fff;font-size:10px;font-weight:600;padding:1px 5px;border-radius:20px;margin-left:auto}
+.nav-label{transition:opacity var(--transition)}
+.sidebar-bottom{padding:10px 8px;border-top:1px solid var(--border)}
+.sidebar-user{display:flex;align-items:center;gap:10px;padding:8px;border-radius:var(--radius-sm);cursor:pointer;transition:background var(--transition)}
+.sidebar-user:hover{background:var(--bg-hover)}
+.user-avatar{width:32px;height:32px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;flex-shrink:0}
+.sidebar-user-info{white-space:nowrap;transition:opacity var(--transition)}
+.sidebar-user-info .name{font-size:12px;font-weight:600}
+.sidebar-user-info .role{font-size:11px;color:var(--text-secondary)}
+/* =============== HEADER =============== */
+#header{height:var(--header-h);background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:12px;flex-shrink:0}
+.header-toggle{width:34px;height:34px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:18px;cursor:pointer;transition:background var(--transition)}
+.header-toggle:hover{background:var(--bg-hover);color:var(--text-primary)}
+.breadcrumbs{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);flex:1}
+.breadcrumbs .sep{font-size:16px;margin:0 2px}
+.breadcrumbs .current{color:var(--text-primary);font-weight:500}
+.header-right{display:flex;align-items:center;gap:8px}
+.header-btn{width:34px;height:34px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:18px;cursor:pointer;transition:background var(--transition);position:relative}
+.header-btn:hover{background:var(--bg-hover);color:var(--text-primary)}
+.header-btn .dot{width:7px;height:7px;background:var(--red);border-radius:50%;position:absolute;top:7px;right:7px;border:1.5px solid var(--bg-secondary)}
+.theme-toggle{background:var(--bg-tertiary);border:1px solid var(--border);border-radius:20px;padding:3px 5px;display:flex;align-items:center;gap:4px;cursor:pointer}
+.theme-toggle i{font-size:14px;padding:3px;border-radius:50%;transition:background var(--transition),color var(--transition)}
+.theme-toggle .active-mode{background:var(--accent);color:#fff}
+/* =============== MAIN CONTENT =============== */
+#content-area{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#content-scroll{flex:1;overflow-y:auto;padding:24px;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.page{display:none;animation:fadeIn 0.18s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+/* =============== KPI CARDS =============== */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+.kpi-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px 16px;cursor:pointer;transition:border-color var(--transition),box-shadow var(--transition)}
+.kpi-card:hover{border-color:var(--border-hover);box-shadow:var(--shadow)}
+.kpi-label{font-size:11px;color:var(--text-muted);font-weight:500;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px}
+.kpi-value{font-size:22px;font-weight:700;line-height:1;color:var(--text-primary);margin-bottom:4px}
+.kpi-sub{font-size:11px;color:var(--text-secondary)}
+.kpi-trend{display:inline-flex;align-items:center;gap:2px;font-size:11px;font-weight:600;padding:2px 6px;border-radius:20px;margin-top:6px}
+.kpi-trend.up{background:var(--green-bg);color:var(--green)}
+.kpi-trend.down{background:var(--red-bg);color:var(--red)}
+.kpi-icon{width:36px;height:36px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:10px}
+/* =============== SECTION TITLE =============== */
+.section-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.section-title{font-size:15px;font-weight:600;color:var(--text-primary)}
+.section-sub{font-size:12px;color:var(--text-secondary);margin-top:2px}
+/* =============== GRID LAYOUTS =============== */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.grid-auto{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
+.col-span-2{grid-column:span 2}
+.flex-row{display:flex;gap:16px}
+.flex-1{flex:1}
+.flex-2{flex:2}
+/* =============== CHART CARDS =============== */
+.chart-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:18px}
+.chart-card-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.chart-title{font-size:13px;font-weight:600;color:var(--text-primary)}
+.chart-sub{font-size:11px;color:var(--text-secondary);margin-top:2px}
+/* =============== TABLES =============== */
+.table-container{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden}
+.table-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.table-title{font-size:13px;font-weight:600}
+.table-actions{display:flex;align-items:center;gap:8px}
+.search-input{background:var(--bg-tertiary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px 7px 30px;width:200px;font-size:12px;position:relative}
+.search-wrap{position:relative}
+.search-wrap i{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:14px;pointer-events:none}
+table{width:100%;border-collapse:collapse}
+thead{background:var(--bg-tertiary)}
+th{padding:10px 16px;text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);cursor:pointer;user-select:none;white-space:nowrap}
+th:hover{color:var(--text-secondary)}
+td{padding:11px 16px;border-top:1px solid var(--border);font-size:12px;color:var(--text-primary);vertical-align:middle}
+tbody tr{transition:background var(--transition)}
+tbody tr:hover{background:var(--bg-hover)}
+/* =============== BADGES =============== */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-green{background:var(--green-bg);color:var(--green)}
+.badge-red{background:var(--red-bg);color:var(--red)}
+.badge-amber{background:var(--amber-bg);color:var(--amber)}
+.badge-blue{background:var(--accent-glow);color:var(--accent)}
+.badge-purple{background:var(--purple-bg);color:var(--purple)}
+.badge-gray{background:var(--bg-hover);color:var(--text-secondary)}
+.badge-teal{background:var(--teal-bg);color:var(--teal)}
+/* =============== BUTTONS =============== */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--radius-sm);font-size:12px;font-weight:500;cursor:pointer;transition:background var(--transition),opacity var(--transition);border:1px solid var(--border)}
+.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-primary:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
+.btn-secondary{background:var(--bg-tertiary);color:var(--text-primary)}
+.btn-secondary:hover{background:var(--bg-hover)}
+.btn-ghost{background:transparent;color:var(--text-secondary)}
+.btn-ghost:hover{background:var(--bg-hover);color:var(--text-primary)}
+.btn-danger{background:var(--red-bg);color:var(--red);border-color:transparent}
+.btn-danger:hover{background:rgba(239,68,68,0.2)}
+.btn-sm{padding:5px 10px;font-size:11px}
+/* =============== STATUS DOT =============== */
+.status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px}
+.dot-green{background:var(--green)}
+.dot-red{background:var(--red)}
+.dot-amber{background:var(--amber)}
+.dot-gray{background:var(--text-muted)}
+/* =============== MODAL =============== */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:500;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-lg);width:100%;max-width:540px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.4)}
+.modal-hd{padding:20px 22px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:15px;font-weight:600}
+.modal-close{width:28px;height:28px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;color:var(--text-muted);cursor:pointer;transition:background var(--transition)}
+.modal-close:hover{background:var(--bg-hover);color:var(--text-primary)}
+.modal-body{padding:20px 22px}
+.modal-footer{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+/* =============== FORM =============== */
+.form-group{margin-bottom:14px}
+.form-label{display:block;font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.04em}
+.form-input{width:100%;padding:8px 11px;border-radius:var(--radius-sm);background:var(--bg-tertiary);border:1px solid var(--border);color:var(--text-primary);font-size:13px;transition:border-color var(--transition)}
+.form-input:focus{border-color:var(--accent)}
+.form-select{width:100%;padding:8px 11px;border-radius:var(--radius-sm);background:var(--bg-tertiary);border:1px solid var(--border);color:var(--text-primary);font-size:13px;cursor:pointer}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+/* =============== TOAST =============== */
+#toast-container{position:fixed;bottom:24px;right:24px;z-index:9000;display:flex;flex-direction:column;gap:8px}
+.toast{display:flex;align-items:center;gap:10px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:12px 16px;min-width:260px;box-shadow:0 8px 24px rgba(0,0,0,0.3);animation:slideIn 0.2s ease;font-size:13px}
+.toast.success{border-left:3px solid var(--green)}
+.toast.error{border-left:3px solid var(--red)}
+.toast.warning{border-left:3px solid var(--amber)}
+.toast.info{border-left:3px solid var(--accent)}
+.toast i{font-size:18px}
+.toast.success i{color:var(--green)}
+.toast.error i{color:var(--red)}
+.toast.warning i{color:var(--amber)}
+.toast.info i{color:var(--accent)}
+@keyframes slideIn{from{transform:translateX(20px);opacity:0}to{transform:none;opacity:1}}
+/* =============== EVENT FEED =============== */
+.event-item{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.event-item:last-child{border-bottom:none}
+.event-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;margin-top:1px}
+.event-text{flex:1}
+.event-title{font-size:12px;font-weight:500;color:var(--text-primary)}
+.event-meta{font-size:11px;color:var(--text-muted);margin-top:1px}
+/* =============== PARKING MAP =============== */
+.parking-grid{display:grid;gap:5px;padding:16px}
+.parking-spot{border-radius:5px;height:38px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;cursor:pointer;border:1.5px solid transparent;transition:all var(--transition)}
+.spot-free{background:var(--green-bg);border-color:var(--green);color:var(--green)}
+.spot-occupied{background:var(--red-bg);border-color:var(--red);color:var(--red)}
+.spot-reserved{background:var(--amber-bg);border-color:var(--amber);color:var(--amber)}
+.spot-maintenance{background:var(--bg-hover);border-color:var(--border);color:var(--text-muted)}
+.parking-spot:hover{transform:scale(1.05);box-shadow:0 2px 8px rgba(0,0,0,0.3)}
+/* =============== IOT DEVICES =============== */
+.device-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px}
+.device-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.device-name{font-size:13px;font-weight:600}
+.device-status{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600}
+.signal-bars{display:flex;align-items:flex-end;gap:2px}
+.bar{background:var(--border);border-radius:1px;width:4px}
+.bar.active{background:var(--accent)}
+/* =============== TIMELINE =============== */
+.timeline{padding:4px 0}
+.timeline-item{display:flex;gap:12px;padding-bottom:16px;position:relative}
+.timeline-item::before{content:'';position:absolute;left:14px;top:24px;bottom:0;width:1px;background:var(--border)}
+.timeline-item:last-child::before{display:none}
+.timeline-dot{width:28px;height:28px;border-radius:50%;background:var(--bg-tertiary);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;z-index:1}
+.timeline-content{flex:1;padding-bottom:4px}
+.timeline-title{font-size:12px;font-weight:600;color:var(--text-primary)}
+.timeline-meta{font-size:11px;color:var(--text-muted);margin-top:2px}
+.timeline-amount{font-size:12px;font-weight:600;color:var(--accent);margin-top:4px}
+/* =============== LOGIN =============== */
+.login-left{flex:1;background:linear-gradient(135deg,#0a0f1e 0%,#0d1730 50%,#091022 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;position:relative;overflow:hidden}
+.login-right{width:420px;background:var(--bg-secondary);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 40px}
+.login-grid{position:absolute;inset:0;opacity:0.06;background-image:linear-gradient(rgba(79,142,247,0.6) 1px,transparent 1px),linear-gradient(90deg,rgba(79,142,247,0.6) 1px,transparent 1px);background-size:40px 40px}
+.login-logo{width:52px;height:52px;background:var(--accent);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:28px;color:#fff;margin-bottom:14px}
+.login-title{font-size:24px;font-weight:700;color:var(--text-primary);margin-bottom:6px;text-align:center}
+.login-sub{font-size:13px;color:var(--text-secondary);text-align:center;margin-bottom:32px}
+.login-input-wrap{position:relative;width:100%;margin-bottom:14px}
+.login-input{width:100%;padding:11px 40px 11px 14px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:13px;transition:border-color var(--transition)}
+.login-input:focus{border-color:var(--accent)}
+.login-input-icon{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:16px;cursor:pointer}
+.login-btn{width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;margin-top:8px;transition:background var(--transition)}
+.login-btn:hover{background:var(--accent-hover)}
+.login-check{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-secondary);cursor:pointer}
+.login-illustration{text-align:center;margin-bottom:24px}
+/* =============== SCROLLBAR =============== */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border-hover);border-radius:4px}
+/* =============== MISC =============== */
+.divider{height:1px;background:var(--border);margin:16px 0}
+.empty-state{text-align:center;padding:40px;color:var(--text-secondary)}
+.empty-state i{font-size:36px;margin-bottom:10px;opacity:0.4}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:18px}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:11px;border:1px solid var(--border);color:var(--text-secondary);cursor:pointer;transition:all var(--transition)}
+.pill:hover,.pill.active{background:var(--accent-glow);border-color:var(--accent);color:var(--accent)}
+.filter-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.log-line{display:flex;align-items:flex-start;gap:10px;padding:6px 12px;font-size:11px;font-family:monospace;border-bottom:1px solid var(--border)}
+.log-time{color:var(--text-muted);flex-shrink:0;width:80px}
+.log-level{font-weight:700;flex-shrink:0;width:55px}
+.log-ok{color:var(--green)}
+.log-warn{color:var(--amber)}
+.log-err{color:var(--red)}
+.log-info{color:var(--accent)}
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px}
+.stat-row:last-child{border-bottom:none}
+.stat-label{color:var(--text-secondary)}
+.stat-val{font-weight:600;color:var(--text-primary)}
+.vehicle-panel{display:flex;gap:16px;height:calc(100vh - var(--header-h) - 68px)}
+.camera-feed{flex:2;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;display:flex;flex-direction:column}
+.camera-top{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.camera-live{flex:1;display:flex;align-items:center;justify-content:center;background:#000;position:relative;min-height:280px}
+.cam-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px}
+.cam-rec{display:flex;align-items:center;gap:6px;position:absolute;top:12px;left:12px;background:rgba(0,0,0,0.5);padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.cam-rec .dot{width:7px;height:7px;background:var(--red);border-radius:50%;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.vehicles-list{width:300px;display:flex;flex-direction:column;gap:0;overflow:hidden}
+.v-list-hd{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md) var(--radius-md) 0 0;padding:12px 14px;border-bottom:1px solid var(--border)}
+.v-list-body{flex:1;overflow-y:auto;background:var(--bg-card);border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius-md) var(--radius-md)}
+.vehicle-item{padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background var(--transition)}
+.vehicle-item:hover,.vehicle-item.selected{background:var(--bg-hover)}
+.v-plate{font-size:13px;font-weight:700;font-family:monospace;letter-spacing:0.05em;color:var(--accent)}
+.v-name{font-size:12px;color:var(--text-primary);margin-top:2px}
+.v-meta{display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-top:3px}
+.v-time{color:var(--green);font-weight:500}
+.detail-panel{position:fixed;right:0;top:0;height:100%;width:420px;background:var(--bg-secondary);border-left:1px solid var(--border);z-index:200;transform:translateX(100%);transition:transform 0.22s ease;overflow-y:auto;display:flex;flex-direction:column}
+.detail-panel.open{transform:none}
+.detail-hd{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.detail-body{padding:18px;flex:1}
+.info-block{margin-bottom:18px}
+.info-block-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.info-row{display:flex;justify-content:space-between;padding:6px 0;font-size:12px;border-bottom:1px solid var(--border)}
+.info-row:last-child{border-bottom:none}
+.info-key{color:var(--text-secondary)}
+.info-val{font-weight:500;color:var(--text-primary)}
+.parking-legend{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-secondary)}
+.legend-dot{width:10px;height:10px;border-radius:2px}
+/* Tariffs */
+.tariff-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:18px;margin-bottom:14px}
+.tariff-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.tariff-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tariff-field{background:var(--bg-tertiary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px}
+.tariff-field label{display:block;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:4px}
+.tariff-field input{background:transparent;border:none;font-size:15px;font-weight:700;color:var(--accent);width:100%;padding:0}
+.tariff-field input:focus{outline:none}
+.role-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px 16px;display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.promo-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px 16px;display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.store-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px 16px;display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.config-section{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px;margin-bottom:16px}
+.config-section-title{font-size:13px;font-weight:600;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;color:var(--text-primary)}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)}
+.toggle-row:last-child{border-bottom:none}
+.toggle-label{font-size:13px;color:var(--text-primary)}
+.toggle-sub{font-size:11px;color:var(--text-secondary);margin-top:1px}
+.toggle{width:38px;height:20px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:20px;position:relative;cursor:pointer;transition:background var(--transition)}
+.toggle.on{background:var(--accent);border-color:var(--accent)}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;background:#fff;border-radius:50%;transition:transform var(--transition);box-shadow:0 1px 2px rgba(0,0,0,0.3)}
+.toggle.on::after{transform:translateX(18px)}
+.color-picker-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.color-opt{width:26px;height:26px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:border-color var(--transition)}
+.color-opt.active{border-color:var(--text-primary)}
+.simulator-output{background:var(--bg-tertiary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-top:10px}
+.sim-total{font-size:24px;font-weight:700;color:var(--accent)}
+.ranking-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.ranking-item:last-child{border-bottom:none}
+.ranking-num{font-size:12px;font-weight:700;color:var(--text-muted);width:20px}
+.ranking-info{flex:1;font-size:12px}
+.ranking-val{font-size:12px;font-weight:600;color:var(--accent)}
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:18px}
+.tab{padding:8px 16px;font-size:13px;font-weight:500;color:var(--text-secondary);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color var(--transition),border-color var(--transition)}
+.tab.active{color:var(--accent);border-color:var(--accent)}
+.tab:hover{color:var(--text-primary)}
+.sublayout{display:flex;gap:16px}
+.sublayout-main{flex:1;min-width:0}
+.sublayout-side{width:300px;flex-shrink:0}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ========== LOGIN ========== -->
+<div id="login-screen">
+  <div class="login-left">
+    <div class="login-grid"></div>
+    <!-- SVG illustration -->
+    <svg width="320" height="220" viewBox="0 0 320 220" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:24px;position:relative">
+      <rect x="20" y="60" width="280" height="140" rx="12" fill="rgba(79,142,247,0.08)" stroke="rgba(79,142,247,0.25)" stroke-width="1.5"/>
+      <!-- Parking spots grid -->
+      <rect x="36" y="76" width="48" height="28" rx="4" fill="rgba(34,197,94,0.15)" stroke="rgba(34,197,94,0.5)" stroke-width="1.2"/>
+      <rect x="90" y="76" width="48" height="28" rx="4" fill="rgba(239,68,68,0.15)" stroke="rgba(239,68,68,0.5)" stroke-width="1.2"/>
+      <rect x="144" y="76" width="48" height="28" rx="4" fill="rgba(34,197,94,0.15)" stroke="rgba(34,197,94,0.5)" stroke-width="1.2"/>
+      <rect x="198" y="76" width="48" height="28" rx="4" fill="rgba(245,158,11,0.15)" stroke="rgba(245,158,11,0.5)" stroke-width="1.2"/>
+      <rect x="252" y="76" width="38" height="28" rx="4" fill="rgba(34,197,94,0.15)" stroke="rgba(34,197,94,0.5)" stroke-width="1.2"/>
+      <!-- Car icon in occupied spot -->
+      <path d="M100 88 h28 l4 8 H96l4-8z" fill="rgba(239,68,68,0.6)" rx="2"/>
+      <rect x="99" y="96" width="30" height="4" rx="1" fill="rgba(239,68,68,0.4)"/>
+      <!-- Car in amber spot -->
+      <path d="M208 88 h28 l4 8 H204l4-8z" fill="rgba(245,158,11,0.6)" rx="2"/>
+      <rect x="207" y="96" width="30" height="4" rx="1" fill="rgba(245,158,11,0.4)"/>
+      <!-- Row 2 -->
+      <rect x="36" y="116" width="48" height="28" rx="4" fill="rgba(239,68,68,0.15)" stroke="rgba(239,68,68,0.5)" stroke-width="1.2"/>
+      <rect x="90" y="116" width="48" height="28" rx="4" fill="rgba(34,197,94,0.15)" stroke="rgba(34,197,94,0.5)" stroke-width="1.2"/>
+      <rect x="144" y="116" width="48" height="28" rx="4" fill="rgba(34,197,94,0.15)" stroke="rgba(34,197,94,0.5)" stroke-width="1.2"/>
+      <rect x="198" y="116" width="48" height="28" rx="4" fill="rgba(239,68,68,0.15)" stroke="rgba(239,68,68,0.5)" stroke-width="1.2"/>
+      <rect x="252" y="116" width="38" height="28" rx="4" fill="rgba(34,197,94,0.15)" stroke="rgba(34,197,94,0.5)" stroke-width="1.2"/>
+      <path d="M46 128 h28 l4 8 H42l4-8z" fill="rgba(239,68,68,0.6)"/>
+      <rect x="45" y="136" width="30" height="4" rx="1" fill="rgba(239,68,68,0.4)"/>
+      <path d="M208 128 h28 l4 8 H204l4-8z" fill="rgba(239,68,68,0.6)"/>
+      <rect x="207" y="136" width="30" height="4" rx="1" fill="rgba(239,68,68,0.4)"/>
+      <!-- Row 3 -->
+      <rect x="36" y="156" width="48" height="28" rx="4" fill="rgba(34,197,94,0.15)" stroke="rgba(34,197,94,0.5)" stroke-width="1.2"/>
+      <rect x="90" y="156" width="48" height="28" rx="4" fill="rgba(34,197,94,0.15)" stroke="rgba(34,197,94,0.5)" stroke-width="1.2"/>
+      <rect x="144" y="156" width="48" height="28" rx="4" fill="rgba(239,68,68,0.15)" stroke="rgba(239,68,68,0.5)" stroke-width="1.2"/>
+      <rect x="198" y="156" width="48" height="28" rx="4" fill="rgba(34,197,94,0.15)" stroke="rgba(34,197,94,0.5)" stroke-width="1.2"/>
+      <rect x="252" y="156" width="38" height="28" rx="4" fill="rgba(90,97,117,0.15)" stroke="rgba(90,97,117,0.5)" stroke-width="1.2"/>
+      <path d="M154 168 h28 l4 8 H150l4-8z" fill="rgba(239,68,68,0.6)"/>
+      <rect x="153" y="176" width="30" height="4" rx="1" fill="rgba(239,68,68,0.4)"/>
+      <!-- IoT nodes -->
+      <circle cx="20" cy="40" r="5" fill="rgba(79,142,247,0.6)"/>
+      <circle cx="80" cy="25" r="5" fill="rgba(79,142,247,0.6)"/>
+      <circle cx="160" cy="15" r="5" fill="rgba(79,142,247,0.6)"/>
+      <circle cx="240" cy="25" r="5" fill="rgba(79,142,247,0.6)"/>
+      <circle cx="300" cy="40" r="5" fill="rgba(79,142,247,0.6)"/>
+      <path d="M20 40 L80 25 L160 15 L240 25 L300 40" stroke="rgba(79,142,247,0.4)" stroke-width="1" fill="none" stroke-dasharray="4 3"/>
+      <!-- WiFi symbols -->
+      <text x="155" y="12" font-size="8" fill="rgba(79,142,247,0.8)" font-family="monospace">WiFi</text>
+      <text x="30" y="55" font-size="9" fill="rgba(34,197,94,0.7)" font-family="monospace">RFID</text>
+      <text x="270" y="55" font-size="9" fill="rgba(79,142,247,0.7)" font-family="monospace">ESP32</text>
+    </svg>
+    <h2 style="font-size:22px;font-weight:700;color:#fff;margin-bottom:8px;text-align:center">Sistema Inteligente de Estacionamiento</h2>
+    <p style="color:rgba(255,255,255,0.45);font-size:13px;text-align:center;max-width:300px;line-height:1.6">Monitoreo IoT en tiempo real · Gestión de accesos · Análisis de ocupación</p>
+    <div style="display:flex;gap:16px;margin-top:28px">
+      <div style="text-align:center"><div style="font-size:20px;font-weight:700;color:#4f8ef7">10</div><div style="font-size:11px;color:rgba(255,255,255,0.4)">Espacios</div></div>
+      <div style="width:1px;background:rgba(255,255,255,0.1)"></div>
+      <div style="text-align:center"><div style="font-size:20px;font-weight:700;color:#22c55e">10%</div><div style="font-size:11px;color:rgba(255,255,255,0.4)">Disponible</div></div>
+      <div style="width:1px;background:rgba(255,255,255,0.1)"></div>
+      <div style="text-align:center"><div style="font-size:20px;font-weight:700;color:#f59e0b">8</div><div style="font-size:11px;color:rgba(255,255,255,0.4)">Sensores</div></div>
+    </div>
+  </div>
+  <div class="login-right">
+    <div class="login-logo"><i class="fa-solid fa-square-parking"></i></div>
+    <h1 class="login-title">Smart Parking IoT</h1>
+    <p class="login-sub">Centro Comercial · Panel Administrativo</p>
+    <div class="login-input-wrap">
+      <input class="login-input" id="login-user" type="text" placeholder="Usuario" value="admin"/>
+      <i class="fa-solid fa-user login-input-icon"></i>
+    </div>
+    <div class="login-input-wrap">
+      <input class="login-input" id="login-pass" type="password" placeholder="Contraseña" value="admin123"/>
+      <i class="fa-solid fa-eye login-input-icon" onclick="togglePass(this)" style="cursor:pointer"></i>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;width:100%;margin-bottom:16px">
+      <label class="login-check"><input type="checkbox" checked style="accent-color:var(--accent)"/> Recordar sesión</label>
+      <span style="font-size:12px;color:var(--accent);cursor:pointer">¿Olvidaste tu contraseña?</span>
+    </div>
+    <button class="login-btn" onclick="doLogin()">Iniciar Sesión</button>
+    <div id="login-err" style="margin-top:12px;font-size:12px;color:var(--red);display:none">Credenciales incorrectas. Use admin / admin123</div>
+    <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);width:100%;text-align:center;font-size:11px;color:var(--text-muted)">Smart Parking IoT v2.1.0 · © 2025</div>
+  </div>
+</div>
+
+<!-- ========== MAIN LAYOUT ========== -->
+<div id="main-layout" style="display:none;width:100%">
+
+<!-- SIDEBAR -->
+<aside id="sidebar">
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-icon"><i class="fa-solid fa-square-parking" style="font-size:18px"></i></div>
+    <div class="sidebar-logo-text">Smart Parking<span>IoT Management</span></div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="sidebar-section-title">Principal</div>
+    <div class="nav-item active" onclick="navigateTo('dashboard',this)"><i class="fa-solid fa-table-cells-large"></i><span class="nav-label">Dashboard</span></div>
+    <div class="nav-item" onclick="navigateTo('monitor',this)"><i class="fa-solid fa-camera"></i><span class="nav-label">Monitoreo en Tiempo Real</span></div>
+    <div class="nav-item" onclick="navigateTo('vehicles',this)"><i class="fa-solid fa-car"></i><span class="nav-label">Vehículos</span></div>
+    <div class="nav-item" onclick="navigateTo('history',this)"><i class="fa-solid fa-chart-line"></i><span class="nav-label">Historial y Reportes</span></div>
+    <div class="sidebar-section-title">Configuración</div>
+    <div class="nav-item" onclick="navigateTo('tariffs',this)"><i class="fa-solid fa-ticket"></i><span class="nav-label">Tarifas y Beneficios</span></div>
+    <div class="nav-item" onclick="navigateTo('iot',this)"><i class="fa-solid fa-microchip"></i><span class="nav-label">Administración IoT</span></div>
+    <div class="nav-item" onclick="navigateTo('settings',this)"><i class="fa-solid fa-gear"></i><span class="nav-label">Configuración</span></div>
+  </nav>
+  <div class="sidebar-bottom">
+    <div class="sidebar-user" onclick="navigateTo('settings',document.querySelector('.nav-item:last-child'))">
+      <div class="user-avatar">AD</div>
+      <div class="sidebar-user-info"><div class="name">Admin Central</div><div class="role">Super Administrador</div></div>
+    </div>
+    <div class="nav-item" onclick="doLogout()" style="margin-top:4px"><i class="fa-solid fa-right-from-bracket"></i><span class="nav-label">Cerrar Sesión</span></div>
+  </div>
+</aside>
+
+<!-- CONTENT -->
+<div id="content-area">
+  <header id="header">
+    <div class="header-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></div>
+    <nav class="breadcrumbs" id="breadcrumbs">
+      <span>Smart Parking IoT</span><span class="sep">›</span><span class="current">Dashboard</span>
+    </nav>
+    <div class="header-right">
+      <div class="header-btn" onclick="showToast('info','Sistema sincronizado correctamente','fa-rotate')"><i class="fa-solid fa-rotate"></i></div>
+      <div class="header-btn"><i class="fa-solid fa-bell"></i><span class="dot"></span></div>
+      <div class="theme-toggle" onclick="toggleTheme()">
+        <i class="fa-solid fa-moon" id="theme-moon" style="font-size:14px;padding:3px;border-radius:50%"></i>
+        <i class="fa-solid fa-sun" id="theme-sun" class="active-mode" style="font-size:14px;padding:3px;border-radius:50%;background:var(--accent);color:#fff"></i>
+      </div>
+      <div class="user-avatar" style="width:30px;height:30px;font-size:11px;cursor:pointer">AD</div>
+    </div>
+  </header>
+  <div id="content-scroll">
+
+    <!-- ======== PAGE: DASHBOARD ======== -->
+    <div class="page active" id="page-dashboard">
+      <div class="section-hd" style="margin-bottom:16px">
+        <div><div class="section-title">Dashboard Ejecutivo</div><div class="section-sub">Visión general del sistema · Actualizado hace 2 minutos</div></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm"><i class="fa-solid fa-calendar"></i> Hoy</button>
+          <button class="btn btn-primary btn-sm" onclick="showToast('success','Reporte generado exitosamente','fa-file-export')"><i class="fa-solid fa-download"></i> Exportar</button>
+        </div>
+      </div>
+      <!-- KPI Grid -->
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-icon" style="background:var(--accent-glow);color:var(--accent)"><i class="fa-solid fa-square-parking"></i></div><div class="kpi-label">Espacios Totales</div><div class="kpi-value">10</div><div class="kpi-trend up"><i class="fa-solid fa-arrow-up" style="font-size:10px"></i>100%</div></div>
+        <div class="kpi-card"><div class="kpi-icon" style="background:var(--red-bg);color:var(--red)"><i class="fa-solid fa-warehouse"></i></div><div class="kpi-label">Espacios Ocupados</div><div class="kpi-value">8</div><div class="kpi-trend down"><i class="fa-solid fa-arrow-up" style="font-size:10px"></i>80%</div></div>
+        <div class="kpi-card"><div class="kpi-icon" style="background:var(--green-bg);color:var(--green)"><i class="fa-solid fa-circle-check"></i></div><div class="kpi-label">Espacios Disponibles</div><div class="kpi-value">1</div><div class="kpi-trend up"><i class="fa-solid fa-arrow-up" style="font-size:10px"></i>10%</div></div>
+        <div class="kpi-card"><div class="kpi-icon" style="background:var(--teal-bg);color:var(--teal)"><i class="fa-solid fa-users"></i></div><div class="kpi-label">Vehículos Activos</div><div class="kpi-value">8</div><div class="kpi-sub">En estacionamiento ahora</div></div>
+        <div class="kpi-card"><div class="kpi-icon" style="background:var(--green-bg);color:var(--green)"><i class="fa-solid fa-dollar-sign"></i></div><div class="kpi-label">Ingresos del Día</div><div class="kpi-value">S/ 1,847</div><div class="kpi-trend up"><i class="fa-solid fa-arrow-up" style="font-size:10px"></i>+12.4%</div></div>
+        <div class="kpi-card"><div class="kpi-icon" style="background:var(--purple-bg);color:var(--purple)"><i class="fa-solid fa-clock"></i></div><div class="kpi-label">Tiempo Promedio</div><div class="kpi-value">1h 42m</div><div class="kpi-sub">Permanencia promedio</div></div>
+        <div class="kpi-card"><div class="kpi-icon" style="background:var(--amber-bg);color:var(--amber)"><i class="fa-solid fa-star"></i></div><div class="kpi-label">Horas Exoneradas</div><div class="kpi-value">184h</div><div class="kpi-sub">Este mes</div></div>
+        <div class="kpi-card"><div class="kpi-icon" style="background:var(--teal-bg);color:var(--teal)"><i class="fa-solid fa-tag"></i></div><div class="kpi-label">Descuentos Aplicados</div><div class="kpi-value">S/ 320</div><div class="kpi-sub">23 aplicaciones hoy</div></div>
+        <div class="kpi-card"><div class="kpi-icon" style="background:var(--purple-bg);color:var(--purple)"><i class="fa-solid fa-crown"></i></div><div class="kpi-label">Usuarios VIP</div><div class="kpi-value">18</div><div class="kpi-trend up"><i class="fa-solid fa-arrow-up" style="font-size:10px"></i>+3 este mes</div></div>
+        <div class="kpi-card"><div class="kpi-icon" style="background:var(--accent-glow);color:var(--accent)"><i class="fa-solid fa-receipt"></i></div><div class="kpi-label">Consumo Registrado</div><div class="kpi-value">S/ 14,290</div><div class="kpi-sub">Total del día</div></div>
+      </div>
+
+      <!-- Charts row 1 -->
+      <div class="grid-2" style="margin-bottom:16px">
+        <div class="chart-card">
+          <div class="chart-card-hd"><div><div class="chart-title">Ocupación por Hora</div><div class="chart-sub">Vehículos presentes por hora del día</div></div></div>
+          <div style="position:relative;height:200px"><canvas id="chart-hourly" role="img" aria-label="Ocupación por hora">Datos de ocupación por hora.</canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-hd"><div><div class="chart-title">Ingresos por Día</div><div class="chart-sub">Últimos 7 días en soles</div></div></div>
+          <div style="position:relative;height:200px"><canvas id="chart-income" role="img" aria-label="Ingresos por día">Ingresos diarios.</canvas></div>
+        </div>
+      </div>
+
+      <!-- Main sublayout -->
+      <div class="sublayout" style="margin-bottom:16px">
+        <div class="sublayout-main">
+          <!-- Parking map -->
+          <div class="chart-card" style="margin-bottom:16px">
+            <div class="chart-card-hd">
+              <div><div class="chart-title">Gemelo Digital · Estacionamiento</div><div class="chart-sub">Vista en tiempo real de todos los espacios</div></div>
+              <div style="display:flex;gap:6px" id="parking-badges">
+                <span class="badge badge-green">1 Libre</span>
+                <span class="badge badge-red">8 Ocupados</span>
+                <span class="badge badge-amber">1 Reservado</span>
+                <span class="badge badge-gray">1 Mant.</span>
+              </div>
+            </div>
+            <div class="parking-legend">
+              <div class="legend-item"><div class="legend-dot" style="background:var(--green);opacity:0.6"></div>Disponible</div>
+              <div class="legend-item"><div class="legend-dot" style="background:var(--red);opacity:0.6"></div>Ocupado</div>
+              <div class="legend-item"><div class="legend-dot" style="background:var(--amber);opacity:0.6"></div>Reservado</div>
+              <div class="legend-item"><div class="legend-dot" style="background:var(--text-muted);opacity:0.6"></div>Mantenimiento</div>
+            </div>
+            <div id="parking-map" style="padding:0 4px"></div>
+          </div>
+
+          <!-- Chart row 2 -->
+          <div class="grid-2">
+            <div class="chart-card">
+              <div class="chart-card-hd"><div class="chart-title">Vehículos por Tipo</div></div>
+              <div style="position:relative;height:170px"><canvas id="chart-types" role="img" aria-label="Vehículos por tipo">Distribución por tipo.</canvas></div>
+            </div>
+            <div class="chart-card">
+              <div class="chart-card-hd"><div class="chart-title">Uso de Beneficios</div></div>
+              <div style="position:relative;height:170px"><canvas id="chart-benefits" role="img" aria-label="Uso de beneficios">Beneficios aplicados.</canvas></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sublayout-side">
+          <!-- Events -->
+          <div class="chart-card" style="margin-bottom:14px">
+            <div class="chart-card-hd" style="margin-bottom:10px"><div class="chart-title">Eventos Recientes</div><span class="badge badge-green"><span class="status-dot dot-green" style="margin:0;width:5px;height:5px;display:inline-block"></span>Live</span></div>
+            <div id="events-feed"></div>
+          </div>
+          <!-- Rankings -->
+          <div class="chart-card">
+            <div class="chart-card-hd" style="margin-bottom:10px"><div class="chart-title">Rankings</div></div>
+            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:8px">Tiendas más visitadas</div>
+            <div id="ranking-stores"></div>
+            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin:12px 0 8px">Promociones más usadas</div>
+            <div id="ranking-promos"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======== PAGE: MONITOR ======== -->
+    <div class="page" id="page-monitor">
+      <div class="section-hd" style="margin-bottom:16px">
+        <div><div class="section-title">Monitoreo en Tiempo Real</div><div class="section-sub">Vista operativa · <span style="color:var(--green)">Sistema activo</span></div></div>
+        <button class="btn btn-primary btn-sm" onclick="showToast('info','Instantánea capturada','fa-camera')"><i class="fa-solid fa-camera"></i> Captura</button>
+      </div>
+      <div class="vehicle-panel">
+        <!-- Camera feed -->
+        <div class="camera-feed">
+          <div class="camera-top">
+            <span class="cam-rec"><span class="dot"></span>REC</span>
+            <div style="font-size:13px;font-weight:600">ESP32-CAM — Entrada Principal</div>
+            <div style="margin-left:auto;display:flex;gap:8px">
+              <span class="badge badge-green">Online</span>
+              <span style="font-size:11px;color:var(--text-muted)">192.168.1.105</span>
+            </div>
+          </div>
+          <div class="camera-live">
+            <div class="cam-overlay">
+              <svg width="280" height="180" viewBox="0 0 280 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="280" height="180" fill="#0a0f1e"/>
+                <rect x="10" y="10" width="260" height="160" rx="4" fill="none" stroke="rgba(79,142,247,0.3)" stroke-width="1" stroke-dasharray="6 4"/>
+                <!-- Road -->
+                <rect x="0" y="90" width="280" height="90" fill="#161b27"/>
+                <rect x="0" y="88" width="280" height="4" fill="#1e2535"/>
+                <!-- Lane markings -->
+                <rect x="60" y="110" width="30" height="5" rx="1" fill="rgba(255,255,200,0.3)"/>
+                <rect x="130" y="110" width="30" height="5" rx="1" fill="rgba(255,255,200,0.3)"/>
+                <rect x="200" y="110" width="30" height="5" rx="1" fill="rgba(255,255,200,0.3)"/>
+                <!-- Car 1 -->
+                <rect x="50" y="120" width="50" height="30" rx="5" fill="#1d4ed8"/>
+                <rect x="56" y="124" width="38" height="16" rx="3" fill="rgba(255,255,255,0.15)"/>
+                <rect x="46" y="144" width="10" height="8" rx="2" fill="#374151"/>
+                <rect x="104" y="144" width="10" height="8" rx="2" fill="#374151"/>
+                <!-- Car 2 -->
+                <rect x="160" y="125" width="50" height="28" rx="5" fill="#7c3aed"/>
+                <rect x="166" y="129" width="38" height="14" rx="3" fill="rgba(255,255,255,0.15)"/>
+                <rect x="156" y="147" width="10" height="8" rx="2" fill="#374151"/>
+                <rect x="214" y="147" width="10" height="8" rx="2" fill="#374151"/>
+                <!-- Sensor beam -->
+                <line x1="0" y1="88" x2="280" y2="88" stroke="rgba(79,142,247,0.4)" stroke-width="2"/>
+                <!-- Crosshairs on car 1 -->
+                <rect x="48" y="118" width="54" height="34" rx="3" fill="none" stroke="rgba(34,197,94,0.8)" stroke-width="1.5" stroke-dasharray="3 2"/>
+                <text x="50" y="116" font-size="9" fill="rgba(34,197,94,0.9)" font-family="monospace">ABC-123 ✓</text>
+                <!-- Crosshairs on car 2 -->
+                <rect x="158" y="123" width="54" height="32" rx="3" fill="none" stroke="rgba(245,158,11,0.8)" stroke-width="1.5" stroke-dasharray="3 2"/>
+                <text x="160" y="121" font-size="9" fill="rgba(245,158,11,0.9)" font-family="monospace">XYZ-789</text>
+                <!-- HUD -->
+                <text x="14" y="26" font-size="9" fill="rgba(79,142,247,0.7)" font-family="monospace">CAM-01 · 1080p · 30fps</text>
+                <text x="14" y="38" font-size="9" fill="rgba(255,255,255,0.4)" font-family="monospace">2025-06-18 · 14:37:22</text>
+                <text x="180" y="26" font-size="9" fill="rgba(34,197,94,0.8)" font-family="monospace">DETECTADOS: 2</text>
+                <!-- Corner markers -->
+                <path d="M10 40 L10 10 L40 10" stroke="rgba(79,142,247,0.6)" stroke-width="1.5" fill="none"/>
+                <path d="M270 40 L270 10 L240 10" stroke="rgba(79,142,247,0.6)" stroke-width="1.5" fill="none"/>
+                <path d="M10 140 L10 170 L40 170" stroke="rgba(79,142,247,0.6)" stroke-width="1.5" fill="none"/>
+                <path d="M270 140 L270 170 L240 170" stroke="rgba(79,142,247,0.6)" stroke-width="1.5" fill="none"/>
+              </svg>
+            </div>
+          </div>
+          <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:10px;flex-wrap:wrap">
+            <div style="flex:1;min-width:120px"><div style="font-size:10px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px">Vehículos detectados</div><div style="font-size:16px;font-weight:700;color:var(--accent)">2 activos</div></div>
+            <div style="flex:1;min-width:120px"><div style="font-size:10px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px">Latencia</div><div style="font-size:16px;font-weight:700;color:var(--green)">12ms</div></div>
+            <div style="flex:1;min-width:120px"><div style="font-size:10px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px">FPS</div><div style="font-size:16px;font-weight:700">30</div></div>
+            <div style="flex:1;min-width:120px"><div style="font-size:10px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px">Resolución</div><div style="font-size:16px;font-weight:700">1080p</div></div>
+          </div>
+        </div>
+
+        <!-- Vehicles list -->
+        <div class="vehicles-list">
+          <div class="v-list-hd">
+            <div style="font-size:13px;font-weight:600">Vehículos en Estacionamiento</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px" id="v-feed-count">8 activos · actualizado ahora</div>
+          </div>
+          <div style="background:var(--bg-card);border:1px solid var(--border);border-top:none;padding:10px 12px">
+            <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:8px">Espacios · Vista rápida</div>
+            <div id="monitor-parking-strip" style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px"></div>
+          </div>
+          <div class="v-list-body" id="vehicles-feed" style="border-top:none"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======== PAGE: VEHICLES ======== -->
+    <div class="page" id="page-vehicles">
+      <div class="section-hd" style="margin-bottom:16px">
+        <div><div class="section-title">Gestión de Vehículos</div><div class="section-sub">Administración completa del registro vehicular</div></div>
+        <button class="btn btn-primary" onclick="openVehicleModal()"><i class="fa-solid fa-plus"></i> Nuevo Vehículo</button>
+      </div>
+      <div class="table-container">
+        <div class="table-header">
+          <div class="table-title">Registro de Vehículos</div>
+          <div class="table-actions">
+            <div class="search-wrap"><i class="fa-solid fa-magnifying-glass"></i><input class="search-input" id="v-search" placeholder="Buscar placa, nombre..." oninput="filterVehicles()"/></div>
+            <select class="btn btn-secondary btn-sm" id="v-filter-role" onchange="filterVehicles()" style="border:1px solid var(--border)">
+              <option value="">Todos los roles</option>
+              <option value="VIP">Cliente VIP</option>
+              <option value="Trabajador">Trabajador</option>
+              <option value="Común">Usuario Común</option>
+              <option value="Propietario">Propietario</option>
+              <option value="Proveedor">Proveedor</option>
+            </select>
+            <select class="btn btn-secondary btn-sm" id="v-filter-status" onchange="filterVehicles()" style="border:1px solid var(--border)">
+              <option value="">Todos los estados</option>
+              <option value="Activo">Activo</option>
+              <option value="Inactivo">Inactivo</option>
+              <option value="Bloqueado">Bloqueado</option>
+            </select>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Placa</th>
+              <th>Propietario</th>
+              <th>Tipo</th>
+              <th>Rol</th>
+              <th>Estado</th>
+              <th>Ingresos Acumulados</th>
+              <th>Beneficios</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="vehicles-tbody"></tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======== PAGE: HISTORY ======== -->
+    <div class="page" id="page-history">
+      <div class="section-hd" style="margin-bottom:16px">
+        <div><div class="section-title">Historial y Reportes</div><div class="section-sub">Consulta histórica de ingresos y egresos</div></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-secondary btn-sm" onclick="showToast('info','Exportando PDF...','fa-file-pdf')"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+          <button class="btn btn-secondary btn-sm" onclick="showToast('info','Exportando Excel...','fa-table')"><i class="fa-solid fa-table"></i> Excel</button>
+        </div>
+      </div>
+      <!-- Filters -->
+      <div class="card" style="margin-bottom:14px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px">
+          <div><label class="form-label">Placa</label><input class="form-input" placeholder="ABC-123" id="h-plate"/></div>
+          <div><label class="form-label">Conductor</label><input class="form-input" placeholder="Nombre..." id="h-driver"/></div>
+          <div><label class="form-label">Fecha Inicio</label><input class="form-input" type="date" id="h-from" value="2025-06-01"/></div>
+          <div><label class="form-label">Fecha Fin</label><input class="form-input" type="date" id="h-to" value="2025-06-18"/></div>
+          <div><label class="form-label">Estado</label><select class="form-select" id="h-status"><option value="">Todos</option><option>Completado</option><option>Activo</option></select></div>
+          <div><label class="form-label">Tipo</label><select class="form-select" id="h-type"><option value="">Todos</option><option>Auto</option><option>SUV</option><option>Moto</option></select></div>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <button class="btn btn-primary btn-sm" onclick="showToast('success','Filtros aplicados','fa-filter')"><i class="fa-solid fa-filter"></i> Aplicar Filtros</button>
+          <button class="btn btn-ghost btn-sm" onclick="showToast('info','Filtros limpiados','fa-xmark')"><i class="fa-solid fa-xmark"></i> Limpiar</button>
+        </div>
+      </div>
+      <!-- History charts -->
+      <div class="grid-2" style="margin-bottom:14px">
+        <div class="chart-card">
+          <div class="chart-card-hd"><div class="chart-title">Ocupación Histórica</div></div>
+          <div style="position:relative;height:180px"><canvas id="chart-hist-occ" role="img" aria-label="Ocupación histórica">Datos históricos.</canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-hd"><div class="chart-title">Ingresos Semanales</div></div>
+          <div style="position:relative;height:180px"><canvas id="chart-hist-income" role="img" aria-label="Ingresos semanales">Ingresos por semana.</canvas></div>
+        </div>
+      </div>
+      <div class="table-container">
+        <div class="table-header">
+          <div class="table-title">Registros de Acceso</div>
+          <div class="table-actions">
+            <span class="badge badge-blue">248 registros</span>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th><th>Hora Ingreso</th><th>Hora Salida</th><th>Tiempo</th><th>Conductor</th><th>Placa</th><th>Consumo</th><th>Descuento</th><th>Total</th><th>Detalle</th>
+            </tr>
+          </thead>
+          <tbody id="history-tbody"></tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======== PAGE: TARIFFS ======== -->
+    <div class="page" id="page-tariffs">
+      <div class="section-hd" style="margin-bottom:16px">
+        <div><div class="section-title">Tarifas y Beneficios</div><div class="section-sub">Configuración de tarifas, roles y promociones</div></div>
+      </div>
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('tariffs','t1',this)">Tarifas</div>
+        <div class="tab" onclick="switchTab('tariffs','t2',this)">Roles y Privilegios</div>
+        <div class="tab" onclick="switchTab('tariffs','t3',this)">Promociones</div>
+        <div class="tab" onclick="switchTab('tariffs','t4',this)">Establecimientos</div>
+      </div>
+
+      <!-- Tab 1: Tarifas -->
+      <div id="tariffs-t1">
+        <div class="tariff-card">
+          <div class="tariff-hd"><span class="section-title">Configuración Tarifaria</span><button class="btn btn-primary btn-sm" onclick="showToast('success','Tarifas guardadas','fa-check')"><i class="fa-solid fa-check"></i> Guardar</button></div>
+          <div class="tariff-grid">
+            <div class="tariff-field"><label>Tarifa por Hora (S/)</label><input type="number" value="3.50"/></div>
+            <div class="tariff-field"><label>Tarifa por Minuto (S/)</label><input type="number" value="0.08"/></div>
+            <div class="tariff-field"><label>Tiempo de Gracia (min)</label><input type="number" value="15"/></div>
+            <div class="tariff-field"><label>Tarifa Máxima Diaria (S/)</label><input type="number" value="35"/></div>
+            <div class="tariff-field"><label>Horario Promocional Inicio</label><input type="time" value="08:00"/></div>
+            <div class="tariff-field"><label>Horario Promocional Fin</label><input type="time" value="12:00"/></div>
+          </div>
+        </div>
+        <!-- Simulator -->
+        <div class="card">
+          <div class="section-title" style="margin-bottom:14px"><i class="fa-solid fa-calculator" style="color:var(--accent)"></i> Simulador de Cálculo</div>
+          <div class="form-row">
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Horas de permanencia</label>
+              <input class="form-input" type="number" id="sim-hours" value="2" min="0" oninput="calcSim()"/>
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Rol del vehículo</label>
+              <select class="form-select" id="sim-role" onchange="calcSim()">
+                <option value="1">Usuario Común (0%)</option>
+                <option value="0.5">Cliente VIP (50%)</option>
+                <option value="0">Trabajador (100%)</option>
+              </select>
+            </div>
+          </div>
+          <div class="simulator-output">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">MONTO CALCULADO</div>
+            <div class="sim-total" id="sim-result">S/ 7.00</div>
+            <div style="font-size:11px;color:var(--text-secondary);margin-top:6px" id="sim-detail">2h × S/3.50 = S/7.00 · Sin descuento</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Roles -->
+      <div id="tariffs-t2" style="display:none">
+        <div class="section-hd" style="margin-bottom:14px">
+          <div class="section-title">Roles y Privilegios</div>
+          <button class="btn btn-primary btn-sm" onclick="openRoleModal()"><i class="fa-solid fa-plus"></i> Nuevo Rol</button>
+        </div>
+        <div id="roles-list"></div>
+      </div>
+
+      <!-- Tab 3: Promos -->
+      <div id="tariffs-t3" style="display:none">
+        <div class="section-hd" style="margin-bottom:14px">
+          <div class="section-title">Promociones por Consumo</div>
+          <button class="btn btn-primary btn-sm" onclick="openPromoModal()"><i class="fa-solid fa-plus"></i> Nueva Promoción</button>
+        </div>
+        <div id="promos-list"></div>
+      </div>
+
+      <!-- Tab 4: Stores -->
+      <div id="tariffs-t4" style="display:none">
+        <div class="section-hd" style="margin-bottom:14px">
+          <div class="section-title">Catálogo de Establecimientos</div>
+          <button class="btn btn-primary btn-sm" onclick="openStoreModal()"><i class="fa-solid fa-plus"></i> Nuevo Establecimiento</button>
+        </div>
+        <div id="stores-list"></div>
+      </div>
+    </div>
+
+    <!-- ======== PAGE: IOT ======== -->
+    <div class="page" id="page-iot">
+      <div class="section-hd" style="margin-bottom:16px">
+        <div><div class="section-title">Administración IoT</div><div class="section-sub">Monitoreo de dispositivos y sensores del sistema</div></div>
+        <div style="display:flex;gap:8px">
+          <span class="badge badge-green"><span class="status-dot dot-green" style="margin:0;margin-right:4px"></span>7 Online</span>
+          <span class="badge badge-amber">1 Advertencia</span>
+          <button class="btn btn-ghost btn-sm" onclick="showToast('info','Sincronizando dispositivos...','fa-rotate')"><i class="fa-solid fa-rotate"></i></button>
+        </div>
+      </div>
+      <!-- KPIs IoT -->
+      <div class="kpi-grid" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr));margin-bottom:20px">
+        <div class="kpi-card"><div class="kpi-label">Latencia Promedio</div><div class="kpi-value" style="font-size:18px">14ms</div><div class="kpi-sub" style="color:var(--green)">Excelente</div></div>
+        <div class="kpi-card"><div class="kpi-label">Última Sincronización</div><div class="kpi-value" style="font-size:14px">Hace 12s</div></div>
+        <div class="kpi-card"><div class="kpi-label">Uso de Red</div><div class="kpi-value" style="font-size:18px">2.4 MB/s</div></div>
+        <div class="kpi-card"><div class="kpi-label">Eventos Hoy</div><div class="kpi-value" style="font-size:18px">1,284</div></div>
+        <div class="kpi-card"><div class="kpi-label">Uptime</div><div class="kpi-value" style="font-size:18px">99.8%</div><div class="kpi-sub" style="color:var(--green)">30 días</div></div>
+      </div>
+      <!-- Device cards -->
+      <div id="iot-devices" class="grid-auto" style="margin-bottom:20px"></div>
+      <!-- Logs -->
+      <div class="chart-card">
+        <div class="chart-card-hd" style="margin-bottom:10px">
+          <div><div class="chart-title">Log de Eventos IoT</div><div class="chart-sub">Últimos eventos del sistema</div></div>
+          <button class="btn btn-ghost btn-sm" onclick="showToast('info','Log limpiado','fa-trash')"><i class="fa-solid fa-trash"></i></button>
+        </div>
+        <div style="background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);max-height:280px;overflow-y:auto" id="iot-logs"></div>
+      </div>
+    </div>
+
+    <!-- ======== PAGE: SETTINGS ======== -->
+    <div class="page" id="page-settings">
+      <div class="section-hd" style="margin-bottom:20px">
+        <div><div class="section-title">Configuración del Sistema</div><div class="section-sub">Personaliza la plataforma según tus preferencias</div></div>
+        <button class="btn btn-primary btn-sm" onclick="showToast('success','Configuración guardada','fa-check')"><i class="fa-solid fa-check"></i> Guardar Cambios</button>
+      </div>
+      <!-- Account -->
+      <div class="config-section">
+        <div class="config-section-title"><i class="fa-solid fa-user"></i>Cuenta de Administrador</div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Nombre completo</label><input class="form-input" value="Admin Central"/></div>
+          <div class="form-group"><label class="form-label">Correo electrónico</label><input class="form-input" value="admin@smartparking.pe" type="email"/></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Contraseña actual</label><input class="form-input" type="password" value="admin123"/></div>
+          <div class="form-group"><label class="form-label">Nueva contraseña</label><input class="form-input" type="password" placeholder="Dejar en blanco para mantener"/></div>
+        </div>
+      </div>
+      <!-- Appearance -->
+      <div class="config-section">
+        <div class="config-section-title"><i class="fa-solid fa-palette"></i>Apariencia</div>
+        <div class="toggle-row">
+          <div><div class="toggle-label">Modo oscuro</div><div class="toggle-sub">Activa el tema oscuro del sistema</div></div>
+          <div class="toggle on" id="dark-mode-toggle" onclick="toggleTheme()"></div>
+        </div>
+        <div style="margin-top:12px">
+          <div class="form-label">Color principal</div>
+          <div class="color-picker-row">
+            <div class="color-opt active" style="background:#4f8ef7" onclick="setAccent('#4f8ef7','#6ba0ff',this)"></div>
+            <div class="color-opt" style="background:#22c55e" onclick="setAccent('#22c55e','#4ade80',this)"></div>
+            <div class="color-opt" style="background:#a78bfa" onclick="setAccent('#a78bfa','#c4b5fd',this)"></div>
+            <div class="color-opt" style="background:#f59e0b" onclick="setAccent('#f59e0b','#fbbf24',this)"></div>
+            <div class="color-opt" style="background:#ef4444" onclick="setAccent('#ef4444','#f87171',this)"></div>
+            <div class="color-opt" style="background:#14b8a6" onclick="setAccent('#14b8a6','#2dd4bf',this)"></div>
+          </div>
+        </div>
+      </div>
+      <!-- System -->
+      <div class="config-section">
+        <div class="config-section-title"><i class="fa-solid fa-building"></i>Sistema</div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Nombre del estacionamiento</label><input class="form-input" value="Estacionamiento Centro Comercial Norte"/></div>
+          <div class="form-group"><label class="form-label">Número de espacios</label><input class="form-input" type="number" value="10"/></div>
+        </div>
+        <div class="form-group"><label class="form-label">Tiempo máximo permitido (horas)</label><input class="form-input" type="number" value="24" style="max-width:200px"/></div>
+      </div>
+      <!-- Notifications -->
+      <div class="config-section">
+        <div class="config-section-title"><i class="fa-solid fa-bell"></i>Notificaciones</div>
+        <div class="toggle-row"><div><div class="toggle-label">Alertas visuales</div><div class="toggle-sub">Notificaciones en pantalla</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+        <div class="toggle-row"><div><div class="toggle-label">Alertas sonoras</div><div class="toggle-sub">Sonido al detectar eventos</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+        <div class="toggle-row"><div><div class="toggle-label">Correos automáticos</div><div class="toggle-sub">Envío de reportes por correo (simulado)</div></div><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+        <div class="toggle-row"><div><div class="toggle-label">Alertas de sensores desconectados</div><div class="toggle-sub">Notificar cuando un dispositivo falla</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+      </div>
+      <!-- Accessibility -->
+      <div class="config-section">
+        <div class="config-section-title"><i class="fa-solid fa-universal-access"></i>Accesibilidad</div>
+        <div>
+          <label class="form-label">Tamaño de fuente</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap" id="font-size-group">
+            <button class="btn btn-secondary btn-sm" onclick="setFontSize('small',this)">Pequeño</button>
+            <button class="btn btn-primary btn-sm" onclick="setFontSize('normal',this)">Normal</button>
+            <button class="btn btn-secondary btn-sm" onclick="setFontSize('large',this)">Grande</button>
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:6px">Ajusta el tamaño de todo el contenido de la plataforma.</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content-scroll -->
+</div><!-- /content-area -->
+
+</div><!-- /main-layout -->
+
+<!-- VEHICLE DETAIL PANEL -->
+<div class="detail-panel" id="detail-panel">
+  <div class="detail-hd">
+    <button onclick="closeDetailPanel()" style="width:28px;height:28px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;color:var(--text-muted);cursor:pointer" class="header-btn"><i class="fa-solid fa-xmark"></i></button>
+    <div style="flex:1">
+      <div class="section-title" id="dp-title">Detalle del Vehículo</div>
+      <div class="section-sub" id="dp-plate">Placa: ---</div>
+    </div>
+    <button class="btn btn-primary btn-sm" id="dp-add-activity-btn" onclick="openActivityModal()"><i class="fa-solid fa-plus"></i> Actividad</button>
+  </div>
+  <div class="detail-body" id="dp-body"></div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="modal-vehicle">
+  <div class="modal">
+    <div class="modal-hd"><span class="modal-title">Nuevo Vehículo</span><div class="modal-close" onclick="closeModal('modal-vehicle')"><i class="fa-solid fa-xmark"></i></div></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-group"><label class="form-label">Placa</label><input class="form-input" placeholder="ABC-123"/></div><div class="form-group"><label class="form-label">Tipo</label><select class="form-select"><option>Auto</option><option>SUV</option><option>Camioneta</option><option>Moto</option></select></div></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Marca</label><input class="form-input" placeholder="Toyota"/></div><div class="form-group"><label class="form-label">Modelo</label><input class="form-input" placeholder="Corolla"/></div></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Color</label><input class="form-input" placeholder="Blanco"/></div><div class="form-group"><label class="form-label">Rol</label><select class="form-select"><option>Usuario Común</option><option>Trabajador</option><option>Cliente VIP</option><option>Propietario de Tienda</option><option>Proveedor</option></select></div></div>
+      <div class="divider"></div>
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:12px">Datos del conductor</div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Nombre</label><input class="form-input" placeholder="Juan Pérez"/></div><div class="form-group"><label class="form-label">DNI</label><input class="form-input" placeholder="12345678"/></div></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Teléfono</label><input class="form-input" placeholder="+51 999 999 999"/></div><div class="form-group"><label class="form-label">Correo</label><input class="form-input" placeholder="correo@email.com" type="email"/></div></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-vehicle')">Cancelar</button><button class="btn btn-primary" onclick="saveVehicle()"><i class="fa-solid fa-check"></i> Guardar</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-promo">
+  <div class="modal">
+    <div class="modal-hd"><span class="modal-title" id="promo-modal-title">Nueva Promoción</span><div class="modal-close" onclick="closeModal('modal-promo')"><i class="fa-solid fa-xmark"></i></div></div>
+    <div class="modal-body">
+      <input type="hidden" id="promo-edit-index" value="-1"/>
+      <div class="form-group"><label class="form-label">Nombre de la promoción</label><input class="form-input" id="promo-name" placeholder="Promo Verano 2025"/></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Monto mínimo (S/)</label><input class="form-input" id="promo-min" type="number" placeholder="50"/></div><div class="form-group"><label class="form-label">Beneficio</label><input class="form-input" id="promo-benefit" placeholder="1 hora gratis"/></div></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Fecha inicio</label><input class="form-input" id="promo-from" type="date"/></div><div class="form-group"><label class="form-label">Fecha fin</label><input class="form-input" id="promo-to" type="date"/></div></div>
+      <div class="form-group"><label class="form-label">Estado</label><select class="form-select" id="promo-status"><option>Activa</option><option>Inactiva</option></select></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-promo')">Cancelar</button><button class="btn btn-primary" id="promo-save-btn" onclick="savePromo()"><i class="fa-solid fa-check"></i> Guardar</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-store">
+  <div class="modal">
+    <div class="modal-hd"><span class="modal-title" id="store-modal-title">Nuevo Establecimiento</span><div class="modal-close" onclick="closeModal('modal-store')"><i class="fa-solid fa-xmark"></i></div></div>
+    <div class="modal-body">
+      <input type="hidden" id="store-edit-index" value="-1"/>
+      <div class="form-group"><label class="form-label">Nombre</label><input class="form-input" id="store-name" placeholder="Tienda XYZ"/></div>
+      <div class="form-group">
+        <label class="form-label">Tipo de establecimiento</label>
+        <select class="form-select" id="store-kind">
+          <option value="consumo">Por consumo (monto en S/)</option>
+          <option value="tiempo">Por tiempo (duración en minutos)</option>
+        </select>
+        <div style="font-size:11px;color:var(--text-secondary);margin-top:5px" id="store-kind-hint">Ej: supermercado, restaurante, farmacia, tienda de ropa</div>
+      </div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Categoría</label><select class="form-select" id="store-cat" onchange="onStoreCatChange()"><option>Restaurante</option><option>Supermercado</option><option>Farmacia</option><option>Cine</option><option>Gimnasio</option><option>Electrónica</option><option>Ropa</option><option>Banco</option><option>Cafetería</option><option>Servicios</option></select></div><div class="form-group"><label class="form-label">Ubicación</label><input class="form-input" id="store-location" placeholder="Piso 1 - Ala Norte"/></div></div>
+      <div class="form-group"><label class="form-label">Descripción</label><textarea class="form-input" id="store-desc" rows="2" placeholder="Descripción del establecimiento..."></textarea></div>
+      <div class="form-group"><label class="form-label">Estado</label><select class="form-select" id="store-status"><option>Activo</option><option>Inactivo</option></select></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-store')">Cancelar</button><button class="btn btn-primary" id="store-save-btn" onclick="saveStore()"><i class="fa-solid fa-check"></i> Guardar</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-role">
+  <div class="modal">
+    <div class="modal-hd"><span class="modal-title" id="role-modal-title">Nuevo Rol</span><div class="modal-close" onclick="closeModal('modal-role')"><i class="fa-solid fa-xmark"></i></div></div>
+    <div class="modal-body">
+      <input type="hidden" id="role-edit-index" value="-1"/>
+      <div class="form-row"><div class="form-group"><label class="form-label">Nombre del rol</label><input class="form-input" id="role-name" placeholder="Ej: Cliente Frecuente"/></div><div class="form-group"><label class="form-label">Ícono</label><select class="form-select" id="role-icon"><option value="fa-user">Usuario</option><option value="fa-briefcase">Maletín</option><option value="fa-crown">Corona</option><option value="fa-store">Tienda</option><option value="fa-user-tie">Corbata</option><option value="fa-star">Estrella</option><option value="fa-truck">Camión</option></select></div></div>
+      <div class="form-group"><label class="form-label">Descripción</label><input class="form-input" id="role-desc" placeholder="Breve descripción del rol"/></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Porcentaje de descuento (%)</label><input class="form-input" id="role-discount" type="number" min="0" max="100" value="0"/></div>
+        <div class="form-group"><label class="form-label">Horas gratuitas</label><input class="form-input" id="role-hours" type="number" min="0" value="0"/></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Prioridad de acceso</label>
+        <select class="form-select" id="role-priority"><option>Normal</option><option>Alta</option><option>Máxima</option></select>
+      </div>
+      <div class="toggle-row" style="border:none;padding:6px 0">
+        <div><div class="toggle-label">Exoneración total</div><div class="toggle-sub">Sin cobro independientemente del tiempo</div></div>
+        <div class="toggle" id="role-exempt-toggle" onclick="this.classList.toggle('on')"></div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-role')">Cancelar</button><button class="btn btn-primary" id="role-save-btn" onclick="saveRole()"><i class="fa-solid fa-check"></i> Crear Rol</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-activity">
+  <div class="modal">
+    <div class="modal-hd"><span class="modal-title">Agregar Actividad</span><div class="modal-close" onclick="closeModal('modal-activity')"><i class="fa-solid fa-xmark"></i></div></div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Establecimiento</label>
+        <select class="form-select" id="act-store" onchange="onActivityStoreChange()"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descripción</label>
+        <input class="form-input" id="act-desc" placeholder="Ej: Compra de abarrotes, película 3D, rutina de pesas..."/>
+      </div>
+      <div class="form-row">
+        <div class="form-group" id="act-amount-wrap">
+          <label class="form-label">Monto consumido (S/)</label>
+          <input class="form-input" id="act-amount" type="number" min="0" step="0.10" placeholder="50.00"/>
+        </div>
+        <div class="form-group" id="act-minutes-wrap" style="display:none">
+          <label class="form-label">Tiempo (minutos)</label>
+          <input class="form-input" id="act-minutes" type="number" min="0" step="5" placeholder="90"/>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text-secondary);margin-top:-4px;display:flex;align-items:center;gap:5px" id="act-type-hint"><i class="fa-solid fa-circle-info"></i> Este establecimiento registra consumo en soles.</div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-activity')">Cancelar</button><button class="btn btn-primary" onclick="saveActivity()"><i class="fa-solid fa-check"></i> Agregar Actividad</button></div>
+  </div>
+</div>
+
+<!-- PARKING SPOT TOOLTIP -->
+<div id="spot-tooltip" style="position:fixed;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:12px 14px;z-index:300;pointer-events:none;display:none;min-width:200px;box-shadow:0 8px 24px rgba(0,0,0,0.3)"></div>
+
+<!-- TOAST CONTAINER -->
+<div id="toast-container"></div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const VEHICLES_DATA = [
+  {plate:'ABC-123',owner:'Juan Pérez',type:'Auto',role:'VIP',status:'Activo',revenue:'S/ 1,240',benefits:'14',entry:'10:20 AM',time:'1h 35m',color:'Blanco',brand:'Toyota',model:'Corolla',doc:'47123456',phone:'+51 987 654 321',email:'juan@gmail.com'},
+  {plate:'XYZ-789',owner:'María García',type:'SUV',role:'Trabajador',status:'Activo',revenue:'S/ 0',benefits:'38',entry:'09:05 AM',time:'2h 50m',color:'Negro',brand:'Hyundai',model:'Tucson',doc:'52365489',phone:'+51 945 123 987',email:'mgarcia@empresa.pe'},
+  {plate:'LMN-456',owner:'Carlos López',type:'Camioneta',role:'Propietario',status:'Activo',revenue:'S/ 890',benefits:'52',entry:'08:15 AM',time:'3h 40m',color:'Plata',brand:'Ford',model:'F-150',doc:'29874521',phone:'+51 912 456 789',email:'clopez@tienda.pe'},
+  {plate:'DEF-321',owner:'Ana Torres',type:'Auto',role:'Común',status:'Inactivo',revenue:'S/ 340',benefits:'3',entry:'—',time:'—',color:'Rojo',brand:'Kia',model:'Rio',doc:'71234567',phone:'+51 974 321 654',email:'atorres@hotmail.com'},
+  {plate:'GHI-654',owner:'Luis Ramírez',type:'Moto',role:'Proveedor',status:'Activo',revenue:'S/ 120',benefits:'1',entry:'11:45 AM',time:'0h 30m',color:'Azul',brand:'Honda',model:'CB500',doc:'61234789',phone:'+51 923 654 123',email:'lramirez@proveedor.com'},
+  {plate:'JKL-987',owner:'Rosa Mendoza',type:'Auto',role:'VIP',status:'Activo',revenue:'S/ 2,100',benefits:'28',entry:'07:30 AM',time:'5h 15m',color:'Blanco',brand:'Mercedes',model:'C200',doc:'47896325',phone:'+51 987 123 456',email:'rmendoza@executive.pe'},
+  {plate:'MNO-147',owner:'Pedro Soto',type:'SUV',role:'Común',status:'Bloqueado',revenue:'S/ 45',benefits:'0',entry:'—',time:'—',color:'Gris',brand:'Nissan',model:'Qashqai',doc:'36512478',phone:'+51 945 789 321',email:'psoto@personal.com'},
+  {plate:'PQR-258',owner:'Lucia Vargas',type:'Auto',role:'Trabajador',status:'Activo',revenue:'S/ 0',benefits:'45',entry:'08:00 AM',time:'4h 15m',color:'Verde',brand:'Volkswagen',model:'Golf',doc:'58964123',phone:'+51 912 369 852',email:'lvargas@trabajo.pe'},
+];
+
+const HISTORY_DATA = [
+  {date:'18/06/2025',in:'10:20',out:'12:05',total:'1h 45m',driver:'Juan Pérez',plate:'ABC-123',consume:'S/ 120',discount:'S/ 10',total_pay:'S/ 5.15',
+    activities:[
+      {hour:'10:35',store:'Plaza Vea',cat:'Supermercado',desc:'Compra de abarrotes y productos del hogar',amount:'S/ 75.00',kind:'consumo'},
+      {hour:'11:20',store:'Starbucks',cat:'Cafetería',desc:'Café y postre',amount:'S/ 18.00',kind:'consumo'},
+      {hour:'11:50',store:'Boticas Arcángel',cat:'Farmacia',desc:'Vitaminas',amount:'S/ 27.00',kind:'consumo'},
+    ]},
+  {date:'18/06/2025',in:'09:05',out:'14:30',total:'5h 25m',driver:'María García',plate:'XYZ-789',consume:'S/ 0',discount:'100%',total_pay:'S/ 0.00',
+    activities:[]},
+  {date:'18/06/2025',in:'08:15',out:'—',total:'Activo',driver:'Carlos López',plate:'LMN-456',consume:'S/ 890',discount:'100%',total_pay:'S/ 0.00',
+    activities:[
+      {hour:'09:00',store:'Samsung Store',cat:'Electrónica',desc:'Compra de accesorios para tienda',amount:'S/ 650.00',kind:'consumo'},
+      {hour:'10:30',store:'McDonald\'s',cat:'Restaurante',desc:'Almuerzo de trabajo',amount:'S/ 95.00',kind:'consumo'},
+      {hour:'12:15',store:'Banco BCP',cat:'Banco',desc:'Trámite bancario',amount:'S/ 0.00',kind:'consumo'},
+      {hour:'13:00',store:'Ripley',cat:'Ropa',desc:'Compra de uniformes',amount:'S/ 145.00',kind:'consumo'},
+    ]},
+  {date:'17/06/2025',in:'14:00',out:'16:30',total:'2h 30m',driver:'Ana Torres',plate:'DEF-321',consume:'S/ 55',discount:'S/ 0',total_pay:'S/ 7.50',
+    activities:[
+      {hour:'14:20',store:'Boticas Arcángel',cat:'Farmacia',desc:'Medicamentos recetados',amount:'S/ 55.00',kind:'consumo'},
+    ]},
+  {date:'17/06/2025',in:'10:00',out:'11:15',total:'1h 15m',driver:'Rosa Mendoza',plate:'JKL-987',consume:'S/ 210',discount:'50%',total_pay:'S/ 2.19',
+    activities:[
+      {hour:'10:15',store:'Cinemark',cat:'Cine',desc:'Función + dulcería',amount:'45 min',kind:'tiempo'},
+      {hour:'11:00',store:'Ripley',cat:'Ropa',desc:'Compra de temporada',amount:'S/ 210.00',kind:'consumo'},
+    ]},
+  {date:'17/06/2025',in:'08:00',out:'13:00',total:'5h 00m',driver:'Pedro Soto',plate:'MNO-147',consume:'S/ 30',discount:'S/ 0',total_pay:'S/ 15.00',
+    activities:[
+      {hour:'08:30',store:'Starbucks',cat:'Cafetería',desc:'Desayuno',amount:'S/ 30.00',kind:'consumo'},
+    ]},
+  {date:'16/06/2025',in:'09:30',out:'11:00',total:'1h 30m',driver:'Lucia Vargas',plate:'PQR-258',consume:'S/ 0',discount:'100%',total_pay:'S/ 0.00',
+    activities:[]},
+  {date:'16/06/2025',in:'12:00',out:'15:30',total:'3h 30m',driver:'Luis Ramírez',plate:'GHI-654',consume:'S/ 80',discount:'S/ 0',total_pay:'S/ 9.33',
+    activities:[
+      {hour:'12:30',store:'Smart Fit',cat:'Gimnasio',desc:'Rutina de pesas',amount:'60 min',kind:'tiempo'},
+      {hour:'14:00',store:'Plaza Vea',cat:'Supermercado',desc:'Compras semanales',amount:'S/ 80.00',kind:'consumo'},
+    ]},
+];
+
+const EVENTS_DATA = [
+  {type:'entry',icon:'fa-right-to-bracket',color:'green',title:'Vehículo ingresó','meta':'ABC-123 · Juan Pérez · Espacio A-12',time:'Hace 2 min'},
+  {type:'exit',icon:'fa-right-from-bracket',color:'blue',title:'Vehículo salió','meta':'DEF-456 · 2h 15m · S/ 6.75',time:'Hace 5 min'},
+  {type:'discount',icon:'fa-tag',color:'amber',title:'Descuento aplicado','meta':'XYZ-789 · Consumo S/120 → 2h gratis',time:'Hace 8 min'},
+  {type:'rfid',icon:'fa-satellite-dish',color:'purple',title:'RFID detectado','meta':'TAG-0041 · Trabajador verificado',time:'Hace 12 min'},
+  {type:'sensor',icon:'fa-triangle-exclamation',color:'red',title:'Sensor desconectado','meta':'Sensor B-07 · Nivel 2',time:'Hace 18 min'},
+  {type:'camera',icon:'fa-camera',color:'teal',title:'Cámara activa','meta':'ESP32-CAM · Entrada principal',time:'Hace 22 min'},
+  {type:'promo',icon:'fa-gift',color:'green',title:'Promoción utilizada','meta':'Consumo >S/200 · Estacionamiento gratuito',time:'Hace 30 min'},
+];
+
+const IOT_DEVICES = [
+  {name:'ESP32 Principal',icon:'fa-microchip',status:'online',signal:95,uptime:'29d 14h',last:'Hace 5s',ip:'192.168.1.101',connection:'wifi'},
+  {name:'ESP32-CAM',icon:'fa-camera',status:'online',signal:88,uptime:'29d 14h',last:'Hace 8s',ip:'192.168.1.105',connection:'wifi'},
+  {name:'RFID RC522',icon:'fa-satellite-dish',status:'online',signal:92,uptime:'29d 13h',last:'Hace 2s',ip:'I2C-0x28',connection:'cable'},
+  {name:'Sensor Entrada',icon:'fa-code-branch',status:'online',signal:97,uptime:'29d 14h',last:'Hace 1s',ip:'GPIO-D4',connection:'cable'},
+  {name:'Sensor Salida',icon:'fa-code-merge',status:'warning',signal:61,uptime:'28d 02h',last:'Hace 45s',ip:'GPIO-D5',connection:'cable'},
+  {name:'Sensores Estac.',icon:'fa-square-parking',status:'online',signal:84,uptime:'29d 14h',last:'Hace 3s',ip:'I2C-Bus',connection:'cable'},
+  {name:'Pantalla OLED',icon:'fa-desktop',status:'online',signal:100,uptime:'29d 14h',last:'Hace 6s',ip:'I2C-0x3C',connection:'cable'},
+  {name:'Módulo WiFi',icon:'fa-wifi',status:'online',signal:79,uptime:'29d 14h',last:'Hace 2s',ip:'192.168.1.1',connection:'wifi'},
+];
+
+const IOT_LOGS = [
+  {time:'14:37:22',level:'OK',msg:'RFID detectado: TAG-0041 · Trabajador autenticado'},
+  {time:'14:37:05',level:'INFO',msg:'Vehículo ingresó: ABC-123 · Espacio A-12 asignado'},
+  {time:'14:36:58',level:'OK',msg:'Barrera de entrada abierta · Sensor confirmado'},
+  {time:'14:36:30',level:'WARN',msg:'Sensor B-07 sin respuesta · Reintentando conexión...'},
+  {time:'14:35:12',level:'OK',msg:'Vehículo salió: LMN-007 · Duración 2h15m · S/ 7.00'},
+  {time:'14:34:47',level:'INFO',msg:'ESP32-CAM: Frame capturado · 2 vehículos detectados'},
+  {time:'14:33:22',level:'OK',msg:'Promoción aplicada: Consumo S/250 → Exoneración total'},
+  {time:'14:32:15',level:'INFO',msg:'OLED actualizado: 1 espacio libre / 10 total'},
+  {time:'14:31:08',level:'OK',msg:'Sincronización NTP completada · Offset: +0.002s'},
+  {time:'14:30:00',level:'INFO',msg:'Heartbeat: 7/8 dispositivos online · Latencia avg 14ms'},
+  {time:'14:28:44',level:'ERR',msg:'Sensor B-07: Timeout · Reconectando (intento 3/5)'},
+  {time:'14:27:19',level:'OK',msg:'Barrera de salida cerrada · Sistema en reposo'},
+];
+
+let rolesData = [
+  {name:'Usuario Común',icon:'fa-user',discount:'0%',hours:'0h gratis',color:'gray',desc:'Tarifa estándar sin beneficios'},
+  {name:'Trabajador',icon:'fa-briefcase',discount:'100%',hours:'Exonerado',color:'green',desc:'Personal del centro comercial'},
+  {name:'Cliente VIP',icon:'fa-crown',discount:'50%',hours:'1h gratis',color:'purple',desc:'Clientes frecuentes premium'},
+  {name:'Propietario de Tienda',icon:'fa-store',discount:'100%',hours:'Exonerado',color:'blue',desc:'Arrendatarios del centro'},
+  {name:'Empresario Frecuente',icon:'fa-user-tie',discount:'30%',hours:'2h gratis',color:'amber',desc:'Clientes corporativos'},
+  {name:'Invitado Especial',icon:'fa-star',discount:'20%',hours:'1h gratis',color:'teal',desc:'Invitados a eventos especiales'},
+  {name:'Proveedor',icon:'fa-truck',discount:'0%',hours:'3h gratis',color:'gray',desc:'Proveedores y distribuidores'},
+];
+
+const PROMOS_DATA = [
+  {name:'Promo Básica',min:'S/ 50',benefit:'1 hora gratis',from:'2025-06-01',to:'2025-12-31',status:'Activa'},
+  {name:'Promo Media',min:'S/ 100',benefit:'2 horas gratis',from:'2025-06-01',to:'2025-12-31',status:'Activa'},
+  {name:'Promo Premium',min:'S/ 200',benefit:'Estacionamiento gratuito',from:'2025-06-01',to:'2025-12-31',status:'Activa'},
+  {name:'Promoción Fin de Semana',min:'S/ 75',benefit:'1.5 horas gratis',from:'2025-06-15',to:'2025-06-30',status:'Activa'},
+  {name:'Noche de Estreno',min:'S/ 150',benefit:'3 horas gratis',from:'2025-06-20',to:'2025-06-22',status:'Inactiva'},
+];
+
+const STORES_DATA = [
+  {name:'Plaza Vea',cat:'Supermercado',icon:'fa-cart-shopping',location:'Planta Baja',status:'Activo',kind:'consumo'},
+  {name:'McDonald\'s',cat:'Restaurante',icon:'fa-utensils',location:'Food Court · P1',status:'Activo',kind:'consumo'},
+  {name:'Cinemark',cat:'Cine',icon:'fa-film',location:'Piso 4',status:'Activo',kind:'tiempo'},
+  {name:'Boticas Arcángel',cat:'Farmacia',icon:'fa-pills',location:'P1 · Ala Sur',status:'Activo',kind:'consumo'},
+  {name:'Ripley',cat:'Ropa',icon:'fa-shirt',location:'Pisos 1 y 2',status:'Activo',kind:'consumo'},
+  {name:'Starbucks',cat:'Cafetería',icon:'fa-mug-saucer',location:'Planta Baja',status:'Activo',kind:'consumo'},
+  {name:'Banco BCP',cat:'Banco',icon:'fa-building-columns',location:'P1 · Entrada',status:'Activo',kind:'consumo'},
+  {name:'Samsung Store',cat:'Electrónica',icon:'fa-mobile-screen',location:'P2 · Ala Norte',status:'Inactivo',kind:'consumo'},
+  {name:'Smart Fit',cat:'Gimnasio',icon:'fa-dumbbell',location:'Piso 3',status:'Activo',kind:'tiempo'},
+];
+
+const TIMELINE_BASE = [
+  {date:'18/06/2025',hour:'11:45',store:'Plaza Vea',cat:'Supermercado',desc:'Compra de abarrotes y productos del hogar',amount:'S/ 120.00',kind:'consumo'},
+  {date:'18/06/2025',hour:'11:10',store:'McDonald\'s',cat:'Restaurante',desc:'Almuerzo familiar - Combo familiar x2',amount:'S/ 65.50',kind:'consumo'},
+  {date:'18/06/2025',hour:'10:35',store:'Boticas Arcángel',cat:'Farmacia',desc:'Medicamentos y vitaminas',amount:'S/ 38.90',kind:'consumo'},
+  {date:'17/06/2025',hour:'16:20',store:'Cinemark',cat:'Cine',desc:'2 entradas película estelar + pop corn',amount:'90 min',kind:'tiempo'},
+  {date:'17/06/2025',hour:'14:30',store:'Ripley',cat:'Ropa',desc:'Ropa de temporada - camisas',amount:'S/ 189.00',kind:'consumo'},
+];
+
+let currentVehicle = null;
+let activeTimeline = [...TIMELINE_BASE];
+let vehiclesData = [...VEHICLES_DATA];
+let promosData = [...PROMOS_DATA];
+let storesData = [...STORES_DATA];
+let charts = {};
+
+// ============================================================
+// INIT
+// ============================================================
+function init(){
+  renderParkingMap();
+  renderEventsFeed();
+  renderRankings();
+  renderVehiclesTable();
+  renderVehiclesFeed();
+  renderHistoryTable();
+  renderIoTDevices();
+  renderIoTLogs();
+  renderRoles();
+  renderPromos();
+  renderStores();
+  initCharts();
+  updateThemeUI();
+}
+
+// ============================================================
+// AUTH
+// ============================================================
+function doLogin(){
+  const u=document.getElementById('login-user').value;
+  const p=document.getElementById('login-pass').value;
+  const err=document.getElementById('login-err');
+  if(u==='admin'&&p==='admin123'){
+    err.style.display='none';
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('main-layout').style.display='flex';
+    setTimeout(init,100);
+    showToast('success','Bienvenido, Admin Central','fa-check');
+  } else {
+    err.style.display='block';
+  }
+}
+function doLogout(){
+  document.getElementById('main-layout').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  showToast('info','Sesión cerrada correctamente','fa-right-from-bracket');
+}
+function togglePass(el){
+  const inp=el.closest('.login-input-wrap').querySelector('input');
+  if(inp.type==='password'){inp.type='text';el.className='fa-solid fa-eye-slash login-input-icon';}
+  else{inp.type='password';el.className='fa-solid fa-eye login-input-icon';}
+}
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login-screen').style.display!=='none')doLogin();});
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+const PAGE_NAMES={dashboard:'Dashboard',monitor:'Monitoreo en Tiempo Real',vehicles:'Vehículos',history:'Historial y Reportes',tariffs:'Tarifas y Beneficios',iot:'Administración IoT',settings:'Configuración'};
+
+function navigateTo(page,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  if(el)el.classList.add('active');
+  document.getElementById('breadcrumbs').innerHTML=`<span>Smart Parking IoT</span><span class="sep">›</span><span class="current">${PAGE_NAMES[page]||page}</span>`;
+  closeDetailPanel();
+}
+
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('collapsed');
+}
+
+// ============================================================
+// THEME
+// ============================================================
+function toggleTheme(){
+  const html=document.documentElement;
+  const isDark=html.getAttribute('data-theme')==='dark';
+  html.setAttribute('data-theme',isDark?'light':'dark');
+  updateThemeUI();
+  if(charts.hourly)reinitCharts();
+}
+function updateThemeUI(){
+  const isDark=document.documentElement.getAttribute('data-theme')==='dark';
+  const moon=document.getElementById('theme-moon');
+  const sun=document.getElementById('theme-sun');
+  const toggle=document.getElementById('dark-mode-toggle');
+  if(isDark){
+    moon.style.cssText='font-size:14px;padding:3px;border-radius:50%;background:var(--accent);color:#fff';
+    sun.style.cssText='font-size:14px;padding:3px;border-radius:50%';
+    if(toggle)toggle.classList.add('on');
+  } else {
+    sun.style.cssText='font-size:14px;padding:3px;border-radius:50%;background:var(--accent);color:#fff';
+    moon.style.cssText='font-size:14px;padding:3px;border-radius:50%';
+    if(toggle)toggle.classList.remove('on');
+  }
+}
+function setAccent(color,hover,el){
+  document.documentElement.style.setProperty('--accent',color);
+  document.documentElement.style.setProperty('--accent-hover',hover);
+  document.querySelectorAll('.color-opt').forEach(o=>o.classList.remove('active'));
+  el.classList.add('active');
+  showToast('success','Color principal actualizado','fa-palette');
+}
+
+function setFontSize(size,el){
+  const zoomMap={small:'0.92',normal:'1',large:'1.1'};
+  const content=document.getElementById('content-scroll');
+  if(content)content.style.zoom=zoomMap[size]||'1';
+  document.querySelectorAll('#font-size-group .btn').forEach(b=>{b.classList.remove('btn-primary');b.classList.add('btn-secondary');});
+  el.classList.remove('btn-secondary');
+  el.classList.add('btn-primary');
+  showToast('info','Tamaño de fuente actualizado','fa-text-height')
+}
+
+// ============================================================
+// TABS
+// ============================================================
+function switchTab(section,tab,el){
+  const sections=document.querySelectorAll(`[id^="${section}-"]`);
+  sections.forEach(s=>s.style.display='none');
+  document.getElementById(`${section}-${tab}`).style.display='block';
+  el.closest('.tabs').querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ============================================================
+// CHARTS
+// ============================================================
+function getChartDefaults(){
+  const isDark=document.documentElement.getAttribute('data-theme')==='dark';
+  return {
+    gridColor:isDark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.05)',
+    textColor:isDark?'#8b92a5':'#9ca3af',
+    bgCard:isDark?'#1a2035':'#ffffff',
+  };
+}
+
+function initCharts(){
+  const d=getChartDefaults();
+  const accentColor='#4f8ef7';
+
+  // Hourly occupancy
+  if(document.getElementById('chart-hourly')){
+    charts.hourly=new Chart(document.getElementById('chart-hourly'),{
+      type:'bar',
+      data:{
+        labels:['6h','7h','8h','9h','10h','11h','12h','13h','14h','15h','16h','17h','18h','19h','20h','21h'],
+        datasets:[{label:'Vehículos',data:[1,2,3,5,7,8,9,8,7,6,7,9,8,6,4,2],backgroundColor:accentColor+'33',borderColor:accentColor,borderWidth:1.5,borderRadius:3}]
+      },
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:d.gridColor},ticks:{color:d.textColor,font:{size:10}}},y:{grid:{color:d.gridColor},ticks:{color:d.textColor,font:{size:10},stepSize:2},min:0,max:10}}}
+    });
+  }
+  // Income chart
+  if(document.getElementById('chart-income')){
+    charts.income=new Chart(document.getElementById('chart-income'),{
+      type:'line',
+      data:{
+        labels:['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'],
+        datasets:[{label:'Ingresos S/',data:[1420,1680,1550,1920,2100,2450,1847],backgroundColor:'rgba(34,197,94,0.08)',borderColor:'#22c55e',borderWidth:2,tension:0.4,fill:true,pointRadius:3,pointBackgroundColor:'#22c55e'}]
+      },
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:d.gridColor},ticks:{color:d.textColor,font:{size:10}}},y:{grid:{color:d.gridColor},ticks:{color:d.textColor,font:{size:10},callback:v=>'S/'+v}}}}
+    });
+  }
+  // Vehicle types
+  if(document.getElementById('chart-types')){
+    charts.types=new Chart(document.getElementById('chart-types'),{
+      type:'doughnut',
+      data:{
+        labels:['Auto','SUV','Camioneta','Moto','Otro'],
+        datasets:[{data:[4,1,1,1,1],backgroundColor:['#4f8ef7','#22c55e','#a78bfa','#f59e0b','#14b8a6'],borderWidth:0}]
+      },
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'65%'}
+    });
+  }
+  // Benefits
+  if(document.getElementById('chart-benefits')){
+    charts.benefits=new Chart(document.getElementById('chart-benefits'),{
+      type:'bar',
+      data:{
+        labels:['Consumo>S/50','Consumo>S/100','Consumo>S/200','Trabajador','VIP'],
+        datasets:[{label:'Usos',data:[38,24,9,45,18],backgroundColor:'#a78bfa33',borderColor:'#a78bfa',borderWidth:1.5,borderRadius:3}]
+      },
+      options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:d.gridColor},ticks:{color:d.textColor,font:{size:10}}},y:{grid:{display:false},ticks:{color:d.textColor,font:{size:9}}}}}
+    });
+  }
+  // History charts
+  if(document.getElementById('chart-hist-occ')){
+    charts.histOcc=new Chart(document.getElementById('chart-hist-occ'),{
+      type:'line',
+      data:{
+        labels:['12 Jun','13 Jun','14 Jun','15 Jun','16 Jun','17 Jun','18 Jun'],
+        datasets:[{label:'Ocupación %',data:[68,72,65,81,78,84,73],borderColor:'#4f8ef7',borderWidth:2,tension:0.4,fill:false,pointRadius:3,pointBackgroundColor:'#4f8ef7'}]
+      },
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:d.gridColor},ticks:{color:d.textColor,font:{size:10}}},y:{grid:{color:d.gridColor},ticks:{color:d.textColor,font:{size:10},callback:v=>v+'%'},min:0,max:100}}}
+    });
+  }
+  if(document.getElementById('chart-hist-income')){
+    charts.histInc=new Chart(document.getElementById('chart-hist-income'),{
+      type:'bar',
+      data:{
+        labels:['12 Jun','13 Jun','14 Jun','15 Jun','16 Jun','17 Jun','18 Jun'],
+        datasets:[{label:'Ingresos',data:[1650,1820,1420,2100,1780,2050,1847],backgroundColor:'#22c55e33',borderColor:'#22c55e',borderWidth:1.5,borderRadius:3}]
+      },
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:d.gridColor},ticks:{color:d.textColor,font:{size:10}}},y:{grid:{color:d.gridColor},ticks:{color:d.textColor,font:{size:10},callback:v=>'S/'+v}}}}
+    });
+  }
+}
+
+function reinitCharts(){
+  Object.values(charts).forEach(c=>{if(c&&c.destroy)c.destroy();});
+  charts={};
+  setTimeout(initCharts,50);
+}
+
+// ============================================================
+// PARKING MAP
+// ============================================================
+const PARKING_TOTAL=10;
+// Mapa de espacio -> índice de vehículo en VEHICLES_DATA (solo para espacios ocupados)
+const SPOT_VEHICLE_MAP={1:0,2:1,4:2,5:3,7:4,8:5,9:6};
+const SPOT_STATE={1:'spot-occupied',2:'spot-occupied',3:'spot-reserved',4:'spot-occupied',5:'spot-occupied',6:'spot-maintenance',7:'spot-occupied',8:'spot-occupied',9:'spot-occupied',10:'spot-free'};
+
+function renderParkingMap(){
+  const map=document.getElementById('parking-map');
+  if(!map)return;
+  const spots=[];
+  for(let i=1;i<=PARKING_TOTAL;i++){
+    spots.push({id:i,cls:SPOT_STATE[i]||'spot-free'});
+  }
+  map.style.cssText='display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:12px;max-width:520px';
+  map.innerHTML=spots.map(s=>`<div class="parking-spot ${s.cls}" style="height:56px;font-size:13px" onclick="showSpotInfo(${s.id},'${s.cls}')" onmouseenter="showSpotTooltip(event,${s.id},'${s.cls}')" onmouseleave="hideSpotTooltip()">${s.id}</div>`).join('');
+  updateParkingBadges();
+  renderMonitorParkingStrip();
+}
+
+function updateParkingBadges(){
+  const counts={free:0,occupied:0,reserved:0,maintenance:0};
+  for(let i=1;i<=PARKING_TOTAL;i++){
+    const cls=SPOT_STATE[i]||'spot-free';
+    if(cls==='spot-free')counts.free++;
+    else if(cls==='spot-occupied')counts.occupied++;
+    else if(cls==='spot-reserved')counts.reserved++;
+    else counts.maintenance++;
+  }
+  const badgeWrap=document.getElementById('parking-badges');
+  if(badgeWrap){
+    badgeWrap.innerHTML=`
+      <span class="badge badge-green">${counts.free} Libre${counts.free!==1?'s':''}</span>
+      <span class="badge badge-red">${counts.occupied} Ocupado${counts.occupied!==1?'s':''}</span>
+      <span class="badge badge-amber">${counts.reserved} Reservado${counts.reserved!==1?'s':''}</span>
+      <span class="badge badge-gray">${counts.maintenance} Mant.</span>
+    `;
+  }
+}
+
+function renderMonitorParkingStrip(){
+  const strip=document.getElementById('monitor-parking-strip');
+  if(!strip)return;
+  const spots=[];
+  for(let i=1;i<=PARKING_TOTAL;i++)spots.push({id:i,cls:SPOT_STATE[i]||'spot-free'});
+  strip.innerHTML=spots.map(s=>`<div class="parking-spot ${s.cls}" style="height:32px;font-size:11px" onclick="showSpotInfo(${s.id},'${s.cls}')" onmouseenter="showSpotTooltip(event,${s.id},'${s.cls}')" onmouseleave="hideSpotTooltip()">${s.id}</div>`).join('');
+}
+
+function showSpotInfo(id,cls){
+  if(cls==='spot-occupied'&&SPOT_VEHICLE_MAP[id]!==undefined){
+    const v=vehiclesData[SPOT_VEHICLE_MAP[id]]||VEHICLES_DATA[SPOT_VEHICLE_MAP[id]];
+    openDetailPanel(v);
+  } else if(cls==='spot-free'){
+    showToast('success',`Espacio ${id} disponible · Listo para asignar`,'fa-square-parking');
+  } else if(cls==='spot-reserved'){
+    showToast('info',`Espacio ${id} reservado · En espera de vehículo`,'fa-bookmark');
+  } else {
+    showToast('warning',`Espacio ${id} en mantenimiento · No disponible`,'fa-screwdriver-wrench');
+  }
+}
+
+function showSpotTooltip(e,id,cls){
+  const tt=document.getElementById('spot-tooltip');
+  let content='';
+  const states={'spot-free':'Disponible','spot-occupied':'Ocupado','spot-reserved':'Reservado','spot-maintenance':'En Mantenimiento'};
+  const colors={'spot-free':'var(--green)','spot-occupied':'var(--red)','spot-reserved':'var(--amber)','spot-maintenance':'var(--text-muted)'};
+  if(cls==='spot-occupied'&&SPOT_VEHICLE_MAP[id]!==undefined){
+    const v=vehiclesData[SPOT_VEHICLE_MAP[id]]||VEHICLES_DATA[SPOT_VEHICLE_MAP[id]];
+    content=`<div style="font-size:11px;font-weight:600;color:${colors[cls]};margin-bottom:6px">● ${states[cls]}</div><div style="font-size:12px;font-weight:700;color:var(--accent);font-family:monospace">${v.plate}</div><div style="font-size:11px;color:var(--text-primary);margin-top:2px">${v.owner}</div><div style="font-size:11px;color:var(--text-muted);margin-top:2px">Ingreso: ${v.entry} · ${v.time}</div>`;
+  } else {
+    content=`<div style="font-size:11px;font-weight:600;color:${colors[cls]};margin-bottom:4px">● ${states[cls]}</div><div style="font-size:11px;color:var(--text-secondary)">Espacio N° ${id}</div>`;
+  }
+  tt.innerHTML=content;
+  tt.style.display='block';
+  tt.style.left=(e.clientX+12)+'px';
+  tt.style.top=(e.clientY-10)+'px';
+}
+function hideSpotTooltip(){document.getElementById('spot-tooltip').style.display='none';}
+
+// ============================================================
+// EVENTS FEED
+// ============================================================
+function renderEventsFeed(){
+  const feed=document.getElementById('events-feed');
+  if(!feed)return;
+  const colors={green:'var(--green)',blue:'var(--accent)',amber:'var(--amber)',purple:'var(--purple)',red:'var(--red)',teal:'var(--teal)'};
+  const bgs={green:'var(--green-bg)',blue:'var(--accent-glow)',amber:'var(--amber-bg)',purple:'var(--purple-bg)',red:'var(--red-bg)',teal:'var(--teal-bg)'};
+  feed.innerHTML=EVENTS_DATA.map(e=>`
+    <div class="event-item">
+      <div class="event-icon" style="background:${bgs[e.color]||'var(--bg-hover)'};color:${colors[e.color]||'var(--text-muted)'}"><i class="fa-solid ${e.icon}"></i></div>
+      <div class="event-text"><div class="event-title">${e.title}</div><div class="event-meta">${e.meta}</div></div>
+      <div style="font-size:10px;color:var(--text-muted);flex-shrink:0;margin-left:4px">${e.time}</div>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+// RANKINGS
+// ============================================================
+function renderRankings(){
+  const stores=['Plaza Vea','McDonald\'s','Ripley','Cinemark','Starbucks'];
+  const vals=['2,840','1,920','1,640','1,310','980'];
+  const storesEl=document.getElementById('ranking-stores');
+  if(storesEl)storesEl.innerHTML=stores.map((s,i)=>`<div class="ranking-item"><div class="ranking-num">${i+1}</div><div class="ranking-info"><div style="font-weight:500;font-size:12px">${s}</div></div><div class="ranking-val">S/ ${vals[i]}</div></div>`).join('');
+
+  const promos=['Consumo >S/50','Consumo >S/100','Consumo >S/200'];
+  const pvs=['38 usos','24 usos','9 usos'];
+  const promosEl=document.getElementById('ranking-promos');
+  if(promosEl)promosEl.innerHTML=promos.map((p,i)=>`<div class="ranking-item"><div class="ranking-num">${i+1}</div><div class="ranking-info" style="font-size:12px">${p}</div><div class="ranking-val" style="color:var(--amber)">${pvs[i]}</div></div>`).join('');
+}
+
+// ============================================================
+// VEHICLES TABLE
+// ============================================================
+function renderVehiclesTable(data){
+  const tbody=document.getElementById('vehicles-tbody');
+  if(!tbody)return;
+  const d=data||vehiclesData;
+  const roleColors={VIP:'badge-purple','Trabajador':'badge-green','Común':'badge-gray','Propietario':'badge-blue','Proveedor':'badge-amber','Empresario':'badge-teal'};
+  const statusColors={Activo:'badge-green',Inactivo:'badge-gray',Bloqueado:'badge-red'};
+  tbody.innerHTML=d.map(v=>`
+    <tr>
+      <td><span style="font-family:monospace;font-weight:700;color:var(--accent);font-size:13px">${v.plate}</span></td>
+      <td>${v.owner}</td>
+      <td>${v.type}</td>
+      <td><span class="badge ${roleColors[v.role]||'badge-gray'}">${v.role}</span></td>
+      <td><span class="badge ${statusColors[v.status]||'badge-gray'}"><span class="status-dot ${v.status==='Activo'?'dot-green':v.status==='Bloqueado'?'dot-red':'dot-gray'}"></span>${v.status}</span></td>
+      <td style="font-weight:600">${v.revenue}</td>
+      <td>${v.benefits} aplicados</td>
+      <td>
+        <div style="display:flex;gap:4px">
+          <button class="btn btn-ghost btn-sm" onclick="openDetailPanel(${JSON.stringify(v).replace(/"/g,"'")})" title="Ver detalle"><i class="fa-solid fa-eye"></i></button>
+          <button class="btn btn-ghost btn-sm" onclick="showToast('info','Editando ${v.plate}','fa-pen')" title="Editar"><i class="fa-solid fa-pen"></i></button>
+          <button class="btn btn-danger btn-sm" onclick="deleteVehicle('${v.plate}')" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function filterVehicles(){
+  const q=(document.getElementById('v-search').value||'').toLowerCase();
+  const role=document.getElementById('v-filter-role').value;
+  const status=document.getElementById('v-filter-status').value;
+  const filtered=vehiclesData.filter(v=>{
+    const matchQ=!q||(v.plate+v.owner).toLowerCase().includes(q);
+    const matchR=!role||v.role.includes(role);
+    const matchS=!status||v.status===status;
+    return matchQ&&matchR&&matchS;
+  });
+  renderVehiclesTable(filtered);
+}
+
+function deleteVehicle(plate){
+  vehiclesData=vehiclesData.filter(v=>v.plate!==plate);
+  renderVehiclesTable();
+  showToast('warning','Vehículo eliminado: '+plate,'fa-trash');
+}
+
+// ============================================================
+// VEHICLES FEED (Monitor)
+// ============================================================
+function renderVehiclesFeed(){
+  const feed=document.getElementById('vehicles-feed');
+  if(!feed)return;
+  const active=vehiclesData.filter(v=>v.status==='Activo');
+  feed.innerHTML=active.map((v,i)=>`
+    <div class="vehicle-item ${i===0?'selected':''}" onclick="selectMonitorVehicle(this,'${v.plate}')">
+      <div class="v-plate">${v.plate}</div>
+      <div class="v-name">${v.owner}</div>
+      <div class="v-meta"><span>Ingreso: ${v.entry}</span><span class="v-time">${v.time}</span></div>
+      <div style="margin-top:3px"><span class="badge badge-green" style="font-size:10px">Activo</span></div>
+    </div>
+  `).join('');
+}
+
+function selectMonitorVehicle(el,plate){
+  el.closest('.v-list-body').querySelectorAll('.vehicle-item').forEach(x=>x.classList.remove('selected'));
+  el.classList.add('selected');
+  const v=vehiclesData.find(x=>x.plate===plate);
+  if(v)openDetailPanel(v);
+}
+
+// ============================================================
+// DETAIL PANEL
+// ============================================================
+function openDetailPanel(v){
+  if(typeof v==='string')v=JSON.parse(v.replace(/'/g,'"'));
+  currentVehicle=v;
+  document.getElementById('dp-title').textContent=v.owner||'Detalle';
+  document.getElementById('dp-plate').textContent='Placa: '+(v.plate||'');
+  document.getElementById('dp-add-activity-btn').style.display='inline-flex';
+  
+  const tl=activeTimeline.map(t=>`
+    <div class="timeline-item">
+      <div class="timeline-dot" style="background:${t.kind==='tiempo'?'var(--purple-bg)':'var(--accent-glow)'};border-color:${t.kind==='tiempo'?'var(--purple)':'var(--accent)'}"><i class="fa-solid ${t.kind==='tiempo'?'fa-clock':'fa-bag-shopping'}" style="color:${t.kind==='tiempo'?'var(--purple)':'var(--accent)'};font-size:12px"></i></div>
+      <div class="timeline-content">
+        <div class="timeline-title">${t.store} · ${t.cat}</div>
+        <div class="timeline-meta">${t.date} ${t.hour} · ${t.desc}</div>
+        <div class="timeline-amount" style="color:${t.kind==='tiempo'?'var(--purple)':'var(--accent)'}">${t.amount}</div>
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('dp-body').innerHTML=`
+    <div class="info-block">
+      <div class="info-block-title"><i class="fa-solid fa-user" style="color:var(--accent)"></i> Datos del Conductor</div>
+      <div class="info-row"><span class="info-key">Nombre</span><span class="info-val">${v.owner||'—'}</span></div>
+      <div class="info-row"><span class="info-key">Documento</span><span class="info-val">${v.doc||'—'}</span></div>
+      <div class="info-row"><span class="info-key">Teléfono</span><span class="info-val">${v.phone||'—'}</span></div>
+      <div class="info-row"><span class="info-key">Correo</span><span class="info-val" style="font-size:11px">${v.email||'—'}</span></div>
+      <div class="info-row"><span class="info-key">Rol</span><span class="info-val"><span class="badge badge-purple">${v.role||'—'}</span></span></div>
+    </div>
+    <div class="info-block">
+      <div class="info-block-title"><i class="fa-solid fa-car" style="color:var(--accent)"></i> Datos del Vehículo</div>
+      <div class="info-row"><span class="info-key">Placa</span><span class="info-val" style="font-family:monospace;color:var(--accent)">${v.plate}</span></div>
+      <div class="info-row"><span class="info-key">Tipo</span><span class="info-val">${v.type||'—'}</span></div>
+      <div class="info-row"><span class="info-key">Marca / Modelo</span><span class="info-val">${v.brand||'—'} ${v.model||''}</span></div>
+      <div class="info-row"><span class="info-key">Color</span><span class="info-val">${v.color||'—'}</span></div>
+    </div>
+    <div class="info-block">
+      <div class="info-block-title"><i class="fa-solid fa-clock" style="color:var(--accent)"></i> Permanencia Actual</div>
+      <div class="info-row"><span class="info-key">Hora de ingreso</span><span class="info-val">${v.entry||'—'}</span></div>
+      <div class="info-row"><span class="info-key">Tiempo estacionado</span><span class="info-val" style="color:var(--green)">${v.time||'—'}</span></div>
+      <div class="info-row"><span class="info-key">Tarifa actual</span><span class="info-val">S/ 3.50/h</span></div>
+      <div class="info-row"><span class="info-key">Beneficio aplicado</span><span class="info-val">${v.role==='Trabajador'||v.role==='Propietario'?'<span class="badge badge-green">Exonerado</span>':v.role==='VIP'?'<span class="badge badge-purple">50% descuento</span>':'<span class="badge badge-gray">Sin beneficio</span>'}</span></div>
+      <div class="info-row"><span class="info-key">Consumo registrado</span><span class="info-val" style="color:var(--accent);font-weight:700">S/ ${activeTimeline.filter(t=>t.kind!=='tiempo').reduce((s,t)=>s+(parseFloat(t.amount.replace('S/ ',''))||0),0).toFixed(2)}</span></div>
+    </div>
+    <div class="info-block">
+      <div class="info-block-title" style="display:flex;justify-content:space-between;align-items:center"><span><i class="fa-solid fa-timeline" style="color:var(--accent)"></i> Actividades en el Centro Comercial</span></div>
+      <div class="timeline" id="detail-timeline">${tl}</div>
+    </div>
+  `;
+  document.getElementById('detail-panel').classList.add('open');
+}
+
+function closeDetailPanel(){
+  document.getElementById('detail-panel').classList.remove('open');
+}
+
+function openActivityModal(){
+  if(!currentVehicle){
+    showToast('warning','Selecciona un vehículo primero','fa-triangle-exclamation');
+    return;
+  }
+  const sel=document.getElementById('act-store');
+  sel.innerHTML=storesData.filter(s=>s.status==='Activo').map(s=>`<option value="${s.name}" data-kind="${s.kind}" data-cat="${s.cat}">${s.name} (${s.cat})</option>`).join('');
+  document.getElementById('act-desc').value='';
+  document.getElementById('act-amount').value='';
+  document.getElementById('act-minutes').value='';
+  onActivityStoreChange();
+  document.getElementById('modal-activity').classList.add('open');
+}
+
+function onStoreCatChange(){
+  const cat=document.getElementById('store-cat').value;
+  const kindSel=document.getElementById('store-kind');
+  const hint=document.getElementById('store-kind-hint');
+  if(cat==='Cine'||cat==='Gimnasio'){
+    kindSel.value='tiempo';
+    hint.textContent='Categorías como cine y gimnasio registran duración en minutos.';
+  } else {
+    kindSel.value='consumo';
+    hint.textContent='Ej: supermercado, restaurante, farmacia, tienda de ropa.';
+  }
+}
+
+function onActivityStoreChange(){
+  const sel=document.getElementById('act-store');
+  const opt=sel.options[sel.selectedIndex];
+  const kind=opt?opt.dataset.kind:'consumo';
+  const amountWrap=document.getElementById('act-amount-wrap');
+  const minutesWrap=document.getElementById('act-minutes-wrap');
+  const hint=document.getElementById('act-type-hint');
+  if(kind==='tiempo'){
+    amountWrap.style.display='none';
+    minutesWrap.style.display='block';
+    hint.innerHTML='<i class="fa-solid fa-circle-info"></i> Este establecimiento registra duración en minutos (cine, gimnasio).';
+  } else {
+    amountWrap.style.display='block';
+    minutesWrap.style.display='none';
+    hint.innerHTML='<i class="fa-solid fa-circle-info"></i> Este establecimiento registra consumo en soles.';
+  }
+}
+
+function saveActivity(){
+  if(!currentVehicle)return;
+  const sel=document.getElementById('act-store');
+  const opt=sel.options[sel.selectedIndex];
+  if(!opt){showToast('error','No hay establecimientos disponibles','fa-xmark');return;}
+  const kind=opt.dataset.kind;
+  const cat=opt.dataset.cat;
+  const desc=document.getElementById('act-desc').value.trim();
+  let amount='';
+  if(kind==='tiempo'){
+    const min=parseFloat(document.getElementById('act-minutes').value);
+    if(!min||min<=0){showToast('error','Ingresa un tiempo válido en minutos','fa-xmark');return;}
+    amount=min+' min';
+  } else {
+    const amt=parseFloat(document.getElementById('act-amount').value);
+    if(!amt||amt<=0){showToast('error','Ingresa un monto válido','fa-xmark');return;}
+    amount='S/ '+amt.toFixed(2);
+  }
+  const now=new Date();
+  const newItem={
+    date:now.toLocaleDateString('es-PE'),
+    hour:now.toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}),
+    store:opt.value,
+    cat:cat,
+    desc:desc||(kind==='tiempo'?'Visita registrada':'Compra registrada'),
+    amount:amount,
+    kind:kind
+  };
+  activeTimeline.unshift(newItem);
+  closeModal('modal-activity');
+  if(currentVehicle)openDetailPanel(currentVehicle);
+  showToast('success','Actividad agregada correctamente','fa-check');
+}
+
+// ============================================================
+// HISTORY TABLE
+// ============================================================
+function renderHistoryTable(){
+  const tbody=document.getElementById('history-tbody');
+  if(!tbody)return;
+  tbody.innerHTML=HISTORY_DATA.map((h,i)=>`
+    <tr>
+      <td>${h.date}</td><td>${h.in}</td><td>${h.out}</td>
+      <td><span class="badge ${h.total==='Activo'?'badge-green':'badge-gray'}">${h.total}</span></td>
+      <td>${h.driver}</td>
+      <td style="font-family:monospace;color:var(--accent);font-weight:700">${h.plate}</td>
+      <td>${h.consume}</td>
+      <td style="color:var(--green)">${h.discount}</td>
+      <td style="font-weight:700">${h.total_pay}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="openHistoryDetail(${i})" title="Ver detalle de la visita">
+          <i class="fa-solid fa-eye"></i> ${h.activities&&h.activities.length?h.activities.length+' compra'+(h.activities.length!==1?'s':''):'Ver'}
+        </button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function openHistoryDetail(index){
+  const h=HISTORY_DATA[index];
+  if(!h)return;
+  currentVehicle=null;
+  document.getElementById('dp-title').textContent=h.driver;
+  document.getElementById('dp-plate').textContent='Placa: '+h.plate+' · Visita del '+h.date;
+  document.getElementById('dp-add-activity-btn').style.display='none';
+
+  const activities=h.activities||[];
+  const tl=activities.length?activities.map(t=>`
+    <div class="timeline-item">
+      <div class="timeline-dot" style="background:${t.kind==='tiempo'?'var(--purple-bg)':'var(--accent-glow)'};border-color:${t.kind==='tiempo'?'var(--purple)':'var(--accent)'}"><i class="fa-solid ${t.kind==='tiempo'?'fa-clock':'fa-bag-shopping'}" style="color:${t.kind==='tiempo'?'var(--purple)':'var(--accent)'};font-size:12px"></i></div>
+      <div class="timeline-content">
+        <div class="timeline-title">${t.store} · ${t.cat}</div>
+        <div class="timeline-meta">${h.date} ${t.hour} · ${t.desc}</div>
+        <div class="timeline-amount">${t.amount}</div>
+      </div>
+    </div>
+  `).join('') : `<div class="empty-state" style="padding:20px"><i class="fa-solid fa-bag-shopping"></i><div style="font-size:12px;margin-top:8px">Sin compras registradas en esta visita</div></div>`;
+
+  document.getElementById('dp-body').innerHTML=`
+    <div class="info-block">
+      <div class="info-block-title"><i class="fa-solid fa-user" style="color:var(--accent)"></i> Datos de la Visita</div>
+      <div class="info-row"><span class="info-key">Conductor</span><span class="info-val">${h.driver}</span></div>
+      <div class="info-row"><span class="info-key">Placa</span><span class="info-val" style="font-family:monospace;color:var(--accent)">${h.plate}</span></div>
+      <div class="info-row"><span class="info-key">Fecha</span><span class="info-val">${h.date}</span></div>
+      <div class="info-row"><span class="info-key">Hora de ingreso</span><span class="info-val">${h.in}</span></div>
+      <div class="info-row"><span class="info-key">Hora de salida</span><span class="info-val">${h.out}</span></div>
+      <div class="info-row"><span class="info-key">Tiempo total</span><span class="info-val">${h.total}</span></div>
+    </div>
+    <div class="info-block">
+      <div class="info-block-title"><i class="fa-solid fa-receipt" style="color:var(--accent)"></i> Resumen de Pago</div>
+      <div class="info-row"><span class="info-key">Consumo registrado</span><span class="info-val">${h.consume}</span></div>
+      <div class="info-row"><span class="info-key">Descuento aplicado</span><span class="info-val" style="color:var(--green)">${h.discount}</span></div>
+      <div class="info-row"><span class="info-key">Total pagado por estacionamiento</span><span class="info-val" style="color:var(--accent);font-weight:700">${h.total_pay}</span></div>
+    </div>
+    <div class="info-block">
+      <div class="info-block-title"><i class="fa-solid fa-timeline" style="color:var(--accent)"></i> Compras y Visitas Durante la Estadía</div>
+      <div class="timeline">${tl}</div>
+    </div>
+  `;
+  document.getElementById('detail-panel').classList.add('open');
+}
+
+// ============================================================
+// IoT
+// ============================================================
+function renderIoTDevices(){
+  const el=document.getElementById('iot-devices');
+  if(!el)return;
+  el.innerHTML=IOT_DEVICES.map(d=>{
+    const pct=d.signal;
+    const statusColor=d.status==='online'?'var(--green)':d.status==='warning'?'var(--amber)':'var(--red)';
+    const statusBg=d.status==='online'?'var(--green-bg)':d.status==='warning'?'var(--amber-bg)':'var(--red-bg)';
+    const bars=[...Array(5)].map((_,i)=>`<div class="bar ${i<Math.ceil(pct/20)?'active':''}" style="height:${6+i*3}px"></div>`).join('');
+    const isWifi=d.connection==='wifi';
+    return `
+      <div class="device-card">
+        <div class="device-header">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:34px;height:34px;border-radius:var(--radius-sm);background:var(--accent-glow);display:flex;align-items:center;justify-content:center;color:var(--accent)"><i class="fa-solid ${d.icon}" style="font-size:17px"></i></div>
+            <div class="device-name">${d.name}</div>
+          </div>
+          <div class="device-status" style="color:${statusColor};background:${statusBg};padding:3px 8px;border-radius:20px;font-size:10px">${d.status.toUpperCase()}</div>
+        </div>
+        <div class="stat-row"><span class="stat-label">Conexión</span><span class="badge ${isWifi?'badge-blue':'badge-teal'}"><i class="fa-solid ${isWifi?'fa-wifi':'fa-plug'}" style="font-size:11px"></i> ${isWifi?'WiFi':'Cable'}</span></div>
+        <div class="stat-row"><span class="stat-label">Señal</span><div style="display:flex;align-items:center;gap:6px"><div class="signal-bars">${bars}</div><span class="stat-val">${pct}%</span></div></div>
+        <div class="stat-row"><span class="stat-label">IP / Bus</span><span class="stat-val" style="font-family:monospace;font-size:11px">${d.ip}</span></div>
+        <div class="stat-row"><span class="stat-label">Uptime</span><span class="stat-val">${d.uptime}</span></div>
+        <div class="stat-row"><span class="stat-label">Último evento</span><span class="stat-val" style="color:var(--text-secondary)">${d.last}</span></div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderIoTLogs(){
+  const el=document.getElementById('iot-logs');
+  if(!el)return;
+  const levelMap={OK:'log-ok',INFO:'log-info',WARN:'log-warn',ERR:'log-err'};
+  el.innerHTML=IOT_LOGS.map(l=>`
+    <div class="log-line">
+      <span class="log-time">${l.time}</span>
+      <span class="log-level ${levelMap[l.level]||'log-info'}">[${l.level}]</span>
+      <span style="color:var(--text-secondary)">${l.msg}</span>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+// TARIFFS
+// ============================================================
+function calcSim(){
+  const h=parseFloat(document.getElementById('sim-hours').value)||0;
+  const r=parseFloat(document.getElementById('sim-role').value)||1;
+  const base=(h*3.5).toFixed(2);
+  const discount=(base*(1-r)).toFixed(2);
+  const total=(base*r).toFixed(2);
+  document.getElementById('sim-result').textContent='S/ '+total;
+  document.getElementById('sim-detail').textContent=`${h}h × S/3.50 = S/${base} · Descuento S/${discount}`;
+}
+
+function renderRoles(){
+  const el=document.getElementById('roles-list');
+  if(!el)return;
+  const colors={gray:'badge-gray',green:'badge-green',purple:'badge-purple',blue:'badge-blue',amber:'badge-amber',teal:'badge-teal'};
+  el.innerHTML=rolesData.map((r,i)=>`
+    <div class="role-card">
+      <div style="width:36px;height:36px;border-radius:var(--radius-sm);background:var(--accent-glow);display:flex;align-items:center;justify-content:center;color:var(--accent)"><i class="fa-solid ${r.icon}" style="font-size:17px"></i></div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600">${r.name}</div>
+        <div style="font-size:11px;color:var(--text-secondary)">${r.desc}</div>
+      </div>
+      <div style="text-align:right;display:flex;flex-direction:column;gap:4px;align-items:flex-end">
+        <span class="badge ${colors[r.color]||'badge-gray'}">${r.discount}</span>
+        <span style="font-size:11px;color:var(--text-muted)">${r.hours}</span>
+      </div>
+      <div style="display:flex;gap:4px;margin-left:8px">
+        <button class="btn btn-ghost btn-sm" onclick="openRoleModal(${i})" title="Editar rol"><i class="fa-solid fa-pen"></i></button>
+        <button class="btn btn-danger btn-sm" onclick="deleteRole(${i})" title="Eliminar rol"><i class="fa-solid fa-trash"></i></button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderPromos(){
+  const el=document.getElementById('promos-list');
+  if(!el)return;
+  el.innerHTML=promosData.map((p,i)=>`
+    <div class="promo-card">
+      <div style="width:36px;height:36px;border-radius:var(--radius-sm);background:var(--amber-bg);display:flex;align-items:center;justify-content:center;color:var(--amber)"><i class="fa-solid fa-gift" style="font-size:17px"></i></div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600">${p.name}</div>
+        <div style="font-size:11px;color:var(--text-secondary)">Consumo ≥ ${p.min} → ${p.benefit}</div>
+        <div style="font-size:10px;color:var(--text-muted)">${p.from} al ${p.to}</div>
+      </div>
+      <span class="badge ${p.status==='Activa'?'badge-green':'badge-gray'}">${p.status}</span>
+      <div style="display:flex;gap:4px;margin-left:4px">
+        <button class="btn btn-ghost btn-sm" onclick="togglePromo(${i})" title="${p.status==='Activa'?'Desactivar':'Activar'}"><i class="fa-solid fa-${p.status==='Activa'?'pause':'play'}"></i></button>
+        <button class="btn btn-ghost btn-sm" onclick="openPromoModal(${i})" title="Editar promoción"><i class="fa-solid fa-pen"></i></button>
+        <button class="btn btn-danger btn-sm" onclick="deletePromo(${i})" title="Eliminar promoción"><i class="fa-solid fa-trash"></i></button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function togglePromo(i){
+  promosData[i].status=promosData[i].status==='Activa'?'Inactiva':'Activa';
+  renderPromos();
+  showToast('info',`Promoción ${promosData[i].status.toLowerCase()}`,'fa-tag');
+}
+
+function renderStores(){
+  const el=document.getElementById('stores-list');
+  if(!el)return;
+  el.innerHTML=storesData.map((s,i)=>`
+    <div class="store-card">
+      <div style="width:36px;height:36px;border-radius:var(--radius-sm);background:var(--teal-bg);display:flex;align-items:center;justify-content:center;color:var(--teal)"><i class="fa-solid ${s.icon}" style="font-size:17px"></i></div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600">${s.name}</div>
+        <div style="font-size:11px;color:var(--text-secondary)">${s.cat} · ${s.location}</div>
+      </div>
+      <span class="badge ${s.kind==='tiempo'?'badge-purple':'badge-blue'}"><i class="fa-solid ${s.kind==='tiempo'?'fa-clock':'fa-money-bill'}" style="font-size:11px"></i> ${s.kind==='tiempo'?'Por tiempo':'Por consumo'}</span>
+      <span class="badge ${s.status==='Activo'?'badge-green':'badge-gray'}">${s.status}</span>
+      <div style="display:flex;gap:4px;margin-left:4px">
+        <button class="btn btn-ghost btn-sm" onclick="openStoreModal(${i})" title="Editar establecimiento"><i class="fa-solid fa-pen"></i></button>
+        <button class="btn btn-danger btn-sm" onclick="deleteStore(${i})" title="Eliminar establecimiento"><i class="fa-solid fa-trash"></i></button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function deleteStore(i){
+  const name=storesData[i].name;
+  storesData.splice(i,1);
+  renderStores();
+  showToast('warning','Establecimiento eliminado: '+name,'fa-trash');
+}
+
+// ============================================================
+// MODALS
+// ============================================================
+function openVehicleModal(){document.getElementById('modal-vehicle').classList.add('open');}
+function openPromoModal(editIndex){
+  const isEdit=editIndex!==undefined&&editIndex>=0;
+  document.getElementById('promo-edit-index').value=isEdit?editIndex:-1;
+  document.getElementById('promo-modal-title').textContent=isEdit?'Editar Promoción':'Nueva Promoción';
+  document.getElementById('promo-save-btn').innerHTML=`<i class="fa-solid fa-check"></i> ${isEdit?'Guardar Cambios':'Guardar'}`;
+  if(isEdit){
+    const p=promosData[editIndex];
+    document.getElementById('promo-name').value=p.name;
+    document.getElementById('promo-min').value=parseFloat((p.min||'').replace('S/','').trim())||'';
+    document.getElementById('promo-benefit').value=p.benefit;
+    document.getElementById('promo-from').value=p.from;
+    document.getElementById('promo-to').value=p.to;
+    document.getElementById('promo-status').value=p.status;
+  } else {
+    document.getElementById('promo-name').value='';
+    document.getElementById('promo-min').value='';
+    document.getElementById('promo-benefit').value='';
+    document.getElementById('promo-from').value='';
+    document.getElementById('promo-to').value='';
+    document.getElementById('promo-status').selectedIndex=0;
+  }
+  document.getElementById('modal-promo').classList.add('open');
+}
+function openStoreModal(editIndex){
+  const isEdit=editIndex!==undefined&&editIndex>=0;
+  document.getElementById('store-edit-index').value=isEdit?editIndex:-1;
+  document.getElementById('store-modal-title').textContent=isEdit?'Editar Establecimiento':'Nuevo Establecimiento';
+  document.getElementById('store-save-btn').innerHTML=`<i class="fa-solid fa-check"></i> ${isEdit?'Guardar Cambios':'Guardar'}`;
+  if(isEdit){
+    const s=storesData[editIndex];
+    document.getElementById('store-name').value=s.name;
+    document.getElementById('store-kind').value=s.kind||'consumo';
+    document.getElementById('store-cat').value=s.cat;
+    document.getElementById('store-location').value=s.location;
+    document.getElementById('store-desc').value=s.desc||'';
+    document.getElementById('store-status').value=s.status;
+  } else {
+    document.getElementById('store-name').value='';
+    document.getElementById('store-kind').selectedIndex=0;
+    document.getElementById('store-cat').selectedIndex=0;
+    document.getElementById('store-location').value='';
+    document.getElementById('store-desc').value='';
+    document.getElementById('store-status').selectedIndex=0;
+  }
+  document.getElementById('store-kind-hint').textContent='Ej: supermercado, restaurante, farmacia, tienda de ropa';
+  document.getElementById('modal-store').classList.add('open');
+}
+function openRoleModal(editIndex){
+  const isEdit=editIndex!==undefined&&editIndex>=0;
+  document.getElementById('role-edit-index').value=isEdit?editIndex:-1;
+  document.getElementById('role-modal-title').textContent=isEdit?'Editar Rol':'Nuevo Rol';
+  document.getElementById('role-save-btn').innerHTML=`<i class="fa-solid fa-check"></i> ${isEdit?'Guardar Cambios':'Crear Rol'}`;
+  if(isEdit){
+    const r=rolesData[editIndex];
+    document.getElementById('role-name').value=r.name;
+    document.getElementById('role-icon').value=r.icon;
+    document.getElementById('role-desc').value=r.desc;
+    document.getElementById('role-discount').value=parseInt(r.discount)||0;
+    document.getElementById('role-hours').value=parseInt(r.hours)||0;
+    document.getElementById('role-priority').selectedIndex=0;
+    if(r.hours==='Exonerado')document.getElementById('role-exempt-toggle').classList.add('on');
+    else document.getElementById('role-exempt-toggle').classList.remove('on');
+  } else {
+    document.getElementById('role-name').value='';
+    document.getElementById('role-desc').value='';
+    document.getElementById('role-discount').value='0';
+    document.getElementById('role-hours').value='0';
+    document.getElementById('role-priority').selectedIndex=0;
+    document.getElementById('role-exempt-toggle').classList.remove('on');
+  }
+  document.getElementById('modal-role').classList.add('open');
+}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function saveVehicle(){closeModal('modal-vehicle');showToast('success','Vehículo registrado exitosamente','fa-check');renderVehiclesTable();}
+function saveStore(){
+  const name=document.getElementById('store-name').value.trim();
+  if(!name){showToast('error','Ingresa un nombre para el establecimiento','fa-xmark');return;}
+  const cat=document.getElementById('store-cat').value;
+  const kind=document.getElementById('store-kind').value;
+  const location=document.getElementById('store-location').value.trim()||'Sin especificar';
+  const status=document.getElementById('store-status').value;
+  const desc=document.getElementById('store-desc').value.trim();
+  const catIcons={'Restaurante':'fa-utensils','Supermercado':'fa-cart-shopping','Farmacia':'fa-pills','Cine':'fa-film','Gimnasio':'fa-dumbbell','Electrónica':'fa-mobile-screen','Ropa':'fa-shirt','Banco':'fa-building-columns','Cafetería':'fa-mug-saucer','Servicios':'fa-briefcase'};
+  const editIndex=parseInt(document.getElementById('store-edit-index').value);
+  const storeObj={name:name,cat:cat,icon:catIcons[cat]||'fa-store',location:location,status:status,kind:kind,desc:desc};
+  if(editIndex>=0){
+    storesData[editIndex]=storeObj;
+    showToast('success',`Establecimiento "${name}" actualizado`,'fa-check');
+  } else {
+    storesData.push(storeObj);
+    showToast('success',`Establecimiento "${name}" registrado (${kind==='tiempo'?'por tiempo':'por consumo'})`,'fa-check');
+  }
+  closeModal('modal-store');
+  renderStores();
+}
+function saveRole(){
+  const name=document.getElementById('role-name').value.trim();
+  if(!name){showToast('error','Ingresa un nombre para el rol','fa-xmark');return;}
+  const icon=document.getElementById('role-icon').value;
+  const desc=document.getElementById('role-desc').value.trim()||'Rol personalizado';
+  const exempt=document.getElementById('role-exempt-toggle').classList.contains('on');
+  const discount=exempt?100:(parseInt(document.getElementById('role-discount').value)||0);
+  const hours=parseInt(document.getElementById('role-hours').value)||0;
+  const colorPool=['gray','green','purple','blue','amber','teal'];
+  const editIndex=parseInt(document.getElementById('role-edit-index').value);
+  if(editIndex>=0){
+    const existingColor=rolesData[editIndex].color;
+    rolesData[editIndex]={
+      name:name,icon:icon,discount:discount+'%',
+      hours:hours>0?hours+'h gratis':(exempt?'Exonerado':'0h gratis'),
+      color:existingColor,desc:desc
+    };
+    showToast('success','Rol "'+name+'" actualizado correctamente','fa-check');
+  } else {
+    rolesData.push({
+      name:name,icon:icon,discount:discount+'%',
+      hours:hours>0?hours+'h gratis':(exempt?'Exonerado':'0h gratis'),
+      color:colorPool[rolesData.length%colorPool.length],desc:desc
+    });
+    showToast('success','Rol "'+name+'" creado correctamente','fa-check');
+  }
+  closeModal('modal-role');
+  renderRoles();
+}
+function deleteRole(i){
+  const name=rolesData[i].name;
+  rolesData.splice(i,1);
+  renderRoles();
+  showToast('warning','Rol eliminado: '+name,'fa-trash');
+}
+function savePromo(){
+  const name=document.getElementById('promo-name').value.trim();
+  if(!name){showToast('error','Ingresa un nombre para la promoción','fa-xmark');return;}
+  const min=document.getElementById('promo-min').value;
+  const benefit=document.getElementById('promo-benefit').value.trim()||'Sin especificar';
+  const from=document.getElementById('promo-from').value;
+  const to=document.getElementById('promo-to').value;
+  const status=document.getElementById('promo-status').value;
+  const editIndex=parseInt(document.getElementById('promo-edit-index').value);
+  const promoObj={name:name,min:'S/ '+(min||'0'),benefit:benefit,from:from||'—',to:to||'—',status:status};
+  if(editIndex>=0){
+    promosData[editIndex]=promoObj;
+    showToast('success',`Promoción "${name}" actualizada`,'fa-check');
+  } else {
+    promosData.push(promoObj);
+    showToast('success',`Promoción "${name}" creada exitosamente`,'fa-check');
+  }
+  closeModal('modal-promo');
+  renderPromos();
+}
+function deletePromo(i){
+  const name=promosData[i].name;
+  promosData.splice(i,1);
+  renderPromos();
+  showToast('warning','Promoción eliminada: '+name,'fa-trash');
+}
+
+// Close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
+
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(type,msg,icon='fa-circle-info'){
+  const icons={success:'fa-circle-check',error:'fa-circle-xmark',warning:'fa-triangle-exclamation',info:'fa-circle-info'};
+  const tc=document.getElementById('toast-container');
+  const t=document.createElement('div');
+  t.className=`toast ${type}`;
+  t.innerHTML=`<i class="fa-solid ${icon||icons[type]}"></i><span>${msg}</span>`;
+  tc.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';t.style.transform='translateX(20px)';t.style.transition='all 0.2s ease';setTimeout(()=>t.remove(),200);},3500);
+}
+
+// ============================================================
+// REAL-TIME SIMULATION
+// ============================================================
+setInterval(()=>{
+  const events=[
+    {type:'info',msg:'RFID detectado: TAG-'+Math.floor(Math.random()*9999),icon:'fa-satellite-dish'},
+    {type:'success',msg:'Vehículo ingresó: '+['ABC','XYZ','LMN','DEF'][Math.floor(Math.random()*4)]+'-'+Math.floor(Math.random()*900+100),icon:'fa-right-to-bracket'},
+    {type:'success',msg:'Sincronización completada · '+IOT_DEVICES[Math.floor(Math.random()*IOT_DEVICES.length)].name,icon:'fa-rotate'},
+  ];
+  const e=events[Math.floor(Math.random()*events.length)];
+  // Only show occasional auto-toasts (20% chance)
+  if(Math.random()<0.2)showToast(e.type,e.msg,e.icon);
+},8000);
+</script>
+</div><!-- /app -->
+</body>
+</html>
