@@ -4,6 +4,7 @@ require("dotenv").config();
 const db = require("./config/db");
 const initDatabase = require("./config/initDb");
 const dashboardRoutes = require("./routes/dashboardRoutes");
+const vehiculoRoutes = require("./routes/vehiculoRoutes");
 
 const app = express();
 
@@ -11,6 +12,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static("public"));
 app.use("/api/v2/dashboard", dashboardRoutes);
+app.use("/api/v2/vehiculos", vehiculoRoutes);
 
 const PORT = process.env.PORT || 3000;
 
