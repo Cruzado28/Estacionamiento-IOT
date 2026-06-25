@@ -1126,15 +1126,7 @@ const HISTORY_DATA = [
     ]},
 ];
 
-const EVENTS_DATA = [
-  {type:'entry',icon:'fa-right-to-bracket',color:'green',title:'Vehículo ingresó','meta':'ABC-123 · Juan Pérez · Espacio A-12',time:'Hace 2 min'},
-  {type:'exit',icon:'fa-right-from-bracket',color:'blue',title:'Vehículo salió','meta':'DEF-456 · 2h 15m · S/ 6.75',time:'Hace 5 min'},
-  {type:'discount',icon:'fa-tag',color:'amber',title:'Descuento aplicado','meta':'XYZ-789 · Consumo S/120 → 2h gratis',time:'Hace 8 min'},
-  {type:'rfid',icon:'fa-satellite-dish',color:'purple',title:'RFID detectado','meta':'TAG-0041 · Trabajador verificado',time:'Hace 12 min'},
-  {type:'sensor',icon:'fa-triangle-exclamation',color:'red',title:'Sensor desconectado','meta':'Sensor B-07 · Nivel 2',time:'Hace 18 min'},
-  {type:'camera',icon:'fa-camera',color:'teal',title:'Cámara activa','meta':'ESP32-CAM · Entrada principal',time:'Hace 22 min'},
-  {type:'promo',icon:'fa-gift',color:'green',title:'Promoción utilizada','meta':'Consumo >S/200 · Estacionamiento gratuito',time:'Hace 30 min'},
-];
+let EVENTS_DATA = [];
 
 const IOT_DEVICES = [
   {name:'ESP32 Principal',icon:'fa-microchip',status:'online',signal:95,uptime:'29d 14h',last:'Hace 5s',ip:'192.168.1.101',connection:'wifi'},
@@ -1226,6 +1218,7 @@ async function init(){
   updateThemeUI();
 
   await cargarDashboardReal();
+  await cargarEventosReales();
 }
 
 // ============================================================
@@ -1738,18 +1731,246 @@ function hideSpotTooltip(){document.getElementById('spot-tooltip').style.display
 // ============================================================
 // EVENTS FEED
 // ============================================================
-function renderEventsFeed(){
-  const feed=document.getElementById('events-feed');
-  if(!feed)return;
-  const colors={green:'var(--green)',blue:'var(--accent)',amber:'var(--amber)',purple:'var(--purple)',red:'var(--red)',teal:'var(--teal)'};
-  const bgs={green:'var(--green-bg)',blue:'var(--accent-glow)',amber:'var(--amber-bg)',purple:'var(--purple-bg)',red:'var(--red-bg)',teal:'var(--teal-bg)'};
-  feed.innerHTML=EVENTS_DATA.map(e=>`
+function escaparHtmlEvento(valor) {
+  return String(valor ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+
+function renderEventsFeed() {
+  const feed = document.getElementById("events-feed");
+
+  if (!feed) {
+    return;
+  }
+
+  if (EVENTS_DATA.length === 0) {
+    feed.innerHTML = `
+      <div style="
+        padding:20px;
+        text-align:center;
+        color:var(--text-muted);
+        font-size:12px;
+      ">
+        No existen eventos registrados.
+      </div>
+    `;
+
+    return;
+  }
+
+  const colors = {
+    green: "var(--green)",
+    blue: "var(--accent)",
+    amber: "var(--amber)",
+    red: "var(--red)",
+    teal: "var(--teal)"
+  };
+
+  const bgs = {
+    green: "var(--green-bg)",
+    blue: "var(--accent-glow)",
+    amber: "var(--amber-bg)",
+    red: "var(--red-bg)",
+    teal: "var(--teal-bg)"
+  };
+
+  feed.innerHTML = EVENTS_DATA.map((evento) => `
     <div class="event-item">
-      <div class="event-icon" style="background:${bgs[e.color]||'var(--bg-hover)'};color:${colors[e.color]||'var(--text-muted)'}"><i class="fa-solid ${e.icon}"></i></div>
-      <div class="event-text"><div class="event-title">${e.title}</div><div class="event-meta">${e.meta}</div></div>
-      <div style="font-size:10px;color:var(--text-muted);flex-shrink:0;margin-left:4px">${e.time}</div>
+      <div
+        class="event-icon"
+        style="
+          background:${bgs[evento.color] || bgs.blue};
+          color:${colors[evento.color] || colors.blue};
+        "
+      >
+        <i class="fa-solid ${escaparHtmlEvento(evento.icon)}"></i>
+      </div>
+
+      <div class="event-text">
+        <div class="event-title">
+          ${escaparHtmlEvento(evento.title)}
+        </div>
+
+        <div class="event-meta">
+          ${escaparHtmlEvento(evento.meta)}
+        </div>
+      </div>
+
+      <div style="
+        font-size:10px;
+        color:var(--text-muted);
+        flex-shrink:0;
+        margin-left:auto;
+      ">
+        ${escaparHtmlEvento(evento.time)}
+      </div>
     </div>
-  `).join('');
+  `).join("");
+}
+
+function obtenerConfiguracionEvento(tipoEvento, nivel) {
+  const tipo = String(tipoEvento || "").toLowerCase();
+  const nivelNormalizado = String(nivel || "").toLowerCase();
+
+  if (tipo.includes("ingreso")) {
+    return {
+      icon: "fa-right-to-bracket",
+      color: "green",
+      title: "Vehículo ingresó"
+    };
+  }
+
+  if (tipo.includes("salida rechazada")) {
+    return {
+      icon: "fa-triangle-exclamation",
+      color: "red",
+      title: "Salida rechazada"
+    };
+  }
+
+  if (tipo.includes("salida")) {
+    return {
+      icon: "fa-right-from-bracket",
+      color: "blue",
+      title: "Vehículo salió"
+    };
+  }
+
+  if (tipo.includes("pago")) {
+    return {
+      icon: "fa-money-bill-wave",
+      color: "green",
+      title: "Pago registrado"
+    };
+  }
+
+  if (tipo.includes("inicializacion")) {
+    return {
+      icon: "fa-power-off",
+      color: "teal",
+      title: "Sistema inicializado"
+    };
+  }
+
+  if (
+    nivelNormalizado.includes("error") ||
+    nivelNormalizado.includes("advertencia")
+  ) {
+    return {
+      icon: "fa-triangle-exclamation",
+      color: "red",
+      title: tipoEvento || "Advertencia del sistema"
+    };
+  }
+
+  return {
+    icon: "fa-circle-info",
+    color: "blue",
+    title: tipoEvento || "Evento del sistema"
+  };
+}
+
+
+function formatearTiempoEvento(fechaHora) {
+  if (!fechaHora) {
+    return "Sin fecha";
+  }
+
+  const fecha = new Date(
+    String(fechaHora).replace(" ", "T")
+  );
+
+  if (Number.isNaN(fecha.getTime())) {
+    return fechaHora;
+  }
+
+  const diferenciaMilisegundos =
+    Date.now() - fecha.getTime();
+
+  const minutos = Math.max(
+    0,
+    Math.floor(diferenciaMilisegundos / 60000)
+  );
+
+  if (minutos < 1) {
+    return "Ahora";
+  }
+
+  if (minutos < 60) {
+    return `Hace ${minutos} min`;
+  }
+
+  const horas = Math.floor(minutos / 60);
+
+  if (horas < 24) {
+    return `Hace ${horas} h`;
+  }
+
+  const dias = Math.floor(horas / 24);
+
+  return `Hace ${dias} día${dias === 1 ? "" : "s"}`;
+}
+
+
+async function cargarEventosReales() {
+  try {
+    const respuesta = await fetch(
+      "/api/v2/historial/eventos?limite=10"
+    );
+
+    if (!respuesta.ok) {
+      throw new Error(
+        "No se pudieron obtener los eventos"
+      );
+    }
+
+    const datos = await respuesta.json();
+
+    if (!datos.ok) {
+      throw new Error(
+        datos.mensaje || "Respuesta de eventos no válida"
+      );
+    }
+
+    EVENTS_DATA = datos.eventos.map((evento) => {
+      const configuracion =
+        obtenerConfiguracionEvento(
+          evento.tipoEvento,
+          evento.nivel
+        );
+
+      return {
+        type: evento.tipoEvento,
+        icon: configuracion.icon,
+        color: configuracion.color,
+        title: configuracion.title,
+        meta: evento.descripcion,
+        time: formatearTiempoEvento(
+          evento.fechaHora
+        )
+      };
+    });
+
+    renderEventsFeed();
+
+    console.log(
+      "Eventos recientes actualizados con datos reales",
+      EVENTS_DATA
+    );
+  } catch (error) {
+    console.error(
+      "Error al cargar los eventos reales:",
+      error
+    );
+
+    EVENTS_DATA = [];
+    renderEventsFeed();
+  }
 }
 
 // ============================================================
