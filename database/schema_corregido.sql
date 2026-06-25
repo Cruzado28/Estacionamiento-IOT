@@ -191,7 +191,7 @@ CREATE TABLE IF NOT EXISTS sesiones_parqueo (
     hora_limite_salida DATETIME NULL,
     fecha_hora_salida DATETIME NULL,
 
-    tarifa_aplicada DECIMAL(10,2) DEFAULT 0.00,
+    tarifa_aplicada DECIMAL(10,4) DEFAULT 0.0000,
     tiempo_minutos INT UNSIGNED DEFAULT 0,
     monto_consumo DECIMAL(10,2) DEFAULT 0.00,
     monto_descuento DECIMAL(10,2) DEFAULT 0.00,
