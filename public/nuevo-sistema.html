@@ -784,14 +784,77 @@ tbody tr:hover{background:var(--bg-hover)}
         <div class="tariff-card">
           <div class="tariff-hd"><span class="section-title">Configuración Tarifaria</span><button class="btn btn-primary btn-sm" onclick="showToast('success','Tarifas guardadas','fa-check')"><i class="fa-solid fa-check"></i> Guardar</button></div>
           <div class="tariff-grid">
-            <div class="tariff-field"><label>Tarifa por Hora (S/)</label><input type="number" value="3.50"/></div>
-            <div class="tariff-field"><label>Tarifa por Minuto (S/)</label><input type="number" value="0.08"/></div>
-            <div class="tariff-field"><label>Tiempo de Gracia (min)</label><input type="number" value="15"/></div>
-            <div class="tariff-field"><label>Tarifa Máxima Diaria (S/)</label><input type="number" value="35"/></div>
-            <div class="tariff-field"><label>Horario Promocional Inicio</label><input type="time" value="08:00"/></div>
-            <div class="tariff-field"><label>Horario Promocional Fin</label><input type="time" value="12:00"/></div>
-          </div>
-        </div>
+  <div class="tariff-field">
+    <label>Tarifa por Hora (S/)</label>
+    <input
+      type="number"
+      id="tarifa-hora"
+      value="0"
+      step="0.01"
+      readonly
+    />
+  </div>
+
+  <div class="tariff-field">
+    <label>Tarifa por Minuto (S/)</label>
+    <input
+      type="number"
+      id="tarifa-minuto"
+      value="0"
+      step="0.0001"
+      readonly
+    />
+  </div>
+
+  <div class="tariff-field">
+    <label>Tiempo de Gracia (min)</label>
+    <input
+      type="number"
+      id="tarifa-gracia"
+      value="0"
+      readonly
+    />
+  </div>
+
+  <div class="tariff-field">
+    <label>Tiempo para Salir Después del Pago (min)</label>
+    <input
+      type="number"
+      id="tarifa-tiempo-salida"
+      value="0"
+      readonly
+    />
+  </div>
+
+  <div class="tariff-field">
+    <label>Tarifa Máxima Diaria (S/)</label>
+    <input
+      type="number"
+      id="tarifa-maxima"
+      value="0"
+      step="0.01"
+      readonly
+    />
+  </div>
+
+  <div class="tariff-field">
+    <label>Horario Promocional Inicio</label>
+    <input
+      type="time"
+      id="tarifa-horario-inicio"
+      readonly
+    />
+  </div>
+
+  <div class="tariff-field">
+    <label>Horario Promocional Fin</label>
+    <input
+      type="time"
+      id="tarifa-horario-fin"
+      readonly
+    />
+  </div>
+</div>
         <!-- Simulator -->
         <div class="card">
           <div class="section-title" style="margin-bottom:14px"><i class="fa-solid fa-calculator" style="color:var(--accent)"></i> Simulador de Cálculo</div>
@@ -1151,9 +1214,10 @@ const TIMELINE_BASE = [
 let currentVehicle = null;
 let activeTimeline = [...TIMELINE_BASE];
 let vehiclesData = [...VEHICLES_DATA];
-let promosData = [...PROMOS_DATA];
+let promosData = [];
 let storesData = [...STORES_DATA];
 let charts = {};
+let tarifaActual = null;
 
 // ============================================================
 // INIT
@@ -1177,6 +1241,10 @@ async function init(){
   await cargarEventosReales();
   await cargarVehiculosReales();
   await cargarHistorialReal();
+  await cargarTarifaReal();
+  await cargarRolesReales();
+  await cargarPromocionesReales();
+
 }
 
 // ============================================================
@@ -3087,14 +3155,312 @@ function renderIoTLogs(){
 // ============================================================
 // TARIFFS
 // ============================================================
-function calcSim(){
-  const h=parseFloat(document.getElementById('sim-hours').value)||0;
-  const r=parseFloat(document.getElementById('sim-role').value)||1;
-  const base=(h*3.5).toFixed(2);
-  const discount=(base*(1-r)).toFixed(2);
-  const total=(base*r).toFixed(2);
-  document.getElementById('sim-result').textContent='S/ '+total;
-  document.getElementById('sim-detail').textContent=`${h}h × S/3.50 = S/${base} · Descuento S/${discount}`;
+async function cargarTarifaReal() {
+  try {
+    const respuesta = await fetch(
+      "/api/v2/configuracion/tarifa"
+    );
+
+    if (!respuesta.ok) {
+      throw new Error(
+        "No se pudo obtener la tarifa activa"
+      );
+    }
+
+    const datos = await respuesta.json();
+
+    if (!datos.ok || !datos.tarifa) {
+      throw new Error(
+        datos.mensaje || "La tarifa recibida no es válida"
+      );
+    }
+
+    tarifaActual = datos.tarifa;
+
+    const campoHora =
+      document.getElementById("tarifa-hora");
+
+    const campoMinuto =
+      document.getElementById("tarifa-minuto");
+
+    const campoGracia =
+      document.getElementById("tarifa-gracia");
+
+    const campoTiempoSalida =
+      document.getElementById("tarifa-tiempo-salida");
+
+    const campoMaxima =
+      document.getElementById("tarifa-maxima");
+
+    const campoHorarioInicio =
+      document.getElementById("tarifa-horario-inicio");
+
+    const campoHorarioFin =
+      document.getElementById("tarifa-horario-fin");
+
+    if (campoHora) {
+      campoHora.value =
+        Number(tarifaActual.tarifaHora).toFixed(2);
+    }
+
+    if (campoMinuto) {
+      campoMinuto.value =
+        Number(tarifaActual.tarifaMinuto).toFixed(4);
+    }
+
+    if (campoGracia) {
+      campoGracia.value =
+        tarifaActual.tiempoGraciaMinutos;
+    }
+
+    if (campoTiempoSalida) {
+      campoTiempoSalida.value =
+        tarifaActual.tiempoSalidaDespuesPagoMinutos;
+    }
+
+    if (campoMaxima) {
+      campoMaxima.value =
+        Number(
+          tarifaActual.tarifaMaximaDiaria
+        ).toFixed(2);
+    }
+
+    if (campoHorarioInicio) {
+      campoHorarioInicio.value =
+        tarifaActual.horarioPromocionalInicio || "";
+    }
+
+    if (campoHorarioFin) {
+      campoHorarioFin.value =
+        tarifaActual.horarioPromocionalFin || "";
+    }
+
+    calcSim();
+
+    console.log(
+      "Tarifa actualizada con datos reales",
+      tarifaActual
+    );
+  } catch (error) {
+    console.error(
+      "Error al cargar la tarifa real:",
+      error
+    );
+
+    showToast(
+      "error",
+      "No se pudo cargar la tarifa",
+      "fa-triangle-exclamation"
+    );
+  }
+}
+
+function calcSim() {
+  const horas = Number(
+    document.getElementById("sim-hours")?.value
+  ) || 0;
+
+  const idRol = Number(
+    document.getElementById("sim-role")?.value
+  );
+
+  const rolSeleccionado = rolesData.find(
+    (rol) => Number(rol.idRol) === idRol
+  );
+
+  const tarifaHora = tarifaActual
+    ? Number(tarifaActual.tarifaHora)
+    : 0;
+
+  const horasGratis = rolSeleccionado
+    ? Number(rolSeleccionado.horasGratis) || 0
+    : 0;
+
+  const porcentajeDescuento = rolSeleccionado
+    ? Number(
+        rolSeleccionado.porcentajeDescuento
+      ) || 0
+    : 0;
+
+  const exoneracionTotal = rolSeleccionado
+    ? Boolean(rolSeleccionado.exoneracionTotal)
+    : false;
+
+  const horasCobrables = exoneracionTotal
+    ? 0
+    : Math.max(0, horas - horasGratis);
+
+  const montoBase =
+    horasCobrables * tarifaHora;
+
+  const descuento = exoneracionTotal
+    ? horas * tarifaHora
+    : montoBase * (
+        porcentajeDescuento / 100
+      );
+
+  const total = exoneracionTotal
+    ? 0
+    : Math.max(0, montoBase - descuento);
+
+  const resultado =
+    document.getElementById("sim-result");
+
+  const detalle =
+    document.getElementById("sim-detail");
+
+  if (resultado) {
+    resultado.textContent =
+      `S/ ${total.toFixed(2)}`;
+  }
+
+  if (detalle) {
+    if (exoneracionTotal) {
+      detalle.textContent =
+        `${horas}h · Exoneración total · ` +
+        `Total S/ 0.00`;
+    } else {
+      detalle.textContent =
+        `${horas}h · ${horasGratis}h gratis · ` +
+        `${horasCobrables}h cobrables × ` +
+        `S/ ${tarifaHora.toFixed(2)} · ` +
+        `Descuento ${porcentajeDescuento}% · ` +
+        `Total S/ ${total.toFixed(2)}`;
+    }
+  }
+}
+
+function obtenerColorRol(nombre, indice) {
+  const coloresPorRol = {
+    "Usuario Comun": "gray",
+    "Trabajador": "green",
+    "Cliente VIP": "purple",
+    "Propietario de Tienda": "blue",
+    "Empresario Frecuente": "amber",
+    "Invitado Especial": "teal",
+    "Proveedor": "gray"
+  };
+
+  const coloresDisponibles = [
+    "gray",
+    "green",
+    "purple",
+    "blue",
+    "amber",
+    "teal"
+  ];
+
+  return (
+    coloresPorRol[nombre] ||
+    coloresDisponibles[indice % coloresDisponibles.length]
+  );
+}
+
+
+async function cargarRolesReales() {
+  try {
+    const respuesta = await fetch(
+      "/api/v2/configuracion/roles"
+    );
+
+    if (!respuesta.ok) {
+      throw new Error(
+        "No se pudieron obtener los roles"
+      );
+    }
+
+    const datos = await respuesta.json();
+
+    if (!datos.ok || !Array.isArray(datos.roles)) {
+      throw new Error(
+        datos.mensaje ||
+        "La respuesta de roles no es válida"
+      );
+    }
+
+    rolesData = datos.roles.map((rol, indice) => ({
+      idRol: rol.idRol,
+      name: rol.nombre,
+      icon: rol.icono || "fa-user",
+
+      discount:
+        `${Number(rol.porcentajeDescuento)}%`,
+
+      hours: rol.exoneracionTotal
+        ? "Exonerado"
+        : `${Number(rol.horasGratis)}h gratis`,
+
+      color: obtenerColorRol(
+        rol.nombre,
+        indice
+      ),
+
+      desc:
+        rol.descripcion ||
+        "Rol registrado en el sistema",
+
+      porcentajeDescuento:
+        Number(rol.porcentajeDescuento),
+
+      horasGratis:
+        Number(rol.horasGratis),
+
+      exoneracionTotal:
+        Boolean(rol.exoneracionTotal),
+
+      prioridadAcceso:
+        rol.prioridadAcceso,
+
+      estado:
+        rol.estado
+    }));
+
+    renderRoles();
+
+    const selectorRol =
+      document.getElementById("sim-role");
+
+    if (selectorRol) {
+      selectorRol.innerHTML = rolesData
+        .filter((rol) => rol.estado === "Activo")
+        .map((rol) => {
+          let beneficio = `${rol.porcentajeDescuento}%`;
+
+          if (rol.exoneracionTotal) {
+            beneficio = "Exonerado";
+          } else if (rol.horasGratis > 0) {
+            beneficio =
+              `${rol.horasGratis}h gratis · ` +
+              `${rol.porcentajeDescuento}%`;
+          }
+
+          return `
+            <option value="${rol.idRol}">
+              ${rol.name} (${beneficio})
+            </option>
+          `;
+        })
+        .join("");
+    }
+
+    calcSim();
+
+    console.log(
+      "Roles actualizados con datos reales",
+      rolesData
+    );
+  } catch (error) {
+    console.error(
+      "Error al cargar los roles reales:",
+      error
+    );
+
+    showToast(
+      "error",
+      "No se pudieron cargar los roles",
+      "fa-triangle-exclamation"
+    );
+  }
 }
 
 function renderRoles(){
@@ -3120,6 +3486,115 @@ function renderRoles(){
   `).join('');
 }
 
+async function cargarPromocionesReales() {
+  try {
+    const respuesta = await fetch(
+      "/api/v2/configuracion/promociones"
+    );
+
+    if (!respuesta.ok) {
+      throw new Error(
+        "No se pudieron obtener las promociones"
+      );
+    }
+
+    const datos = await respuesta.json();
+
+    if (
+      !datos.ok ||
+      !Array.isArray(datos.promociones)
+    ) {
+      throw new Error(
+        datos.mensaje ||
+        "La respuesta de promociones no es válida"
+      );
+    }
+
+    promosData = datos.promociones.map(
+      (promocion) => ({
+        idPromocion: promocion.idPromocion,
+
+        name: promocion.nombre,
+
+        min:
+          `S/ ${Number(
+            promocion.montoMinimo
+          ).toFixed(2)}`,
+
+        benefit:
+          promocion.beneficioDescripcion ||
+          describirBeneficioPromocion(promocion),
+
+        from: promocion.fechaInicio,
+        to: promocion.fechaFin,
+        status: promocion.estado,
+
+        tipoBeneficio:
+          promocion.tipoBeneficio,
+
+        valorBeneficio:
+          Number(promocion.valorBeneficio),
+
+        limiteUsos:
+          promocion.limiteUsos,
+
+        usosRealizados:
+          Number(promocion.usosRealizados) || 0
+      })
+    );
+
+    renderPromos();
+
+    console.log(
+      "Promociones actualizadas con datos reales",
+      promosData
+    );
+  } catch (error) {
+    console.error(
+      "Error al cargar las promociones reales:",
+      error
+    );
+
+    promosData = [];
+    renderPromos();
+
+    showToast(
+      "error",
+      "No se pudieron cargar las promociones",
+      "fa-triangle-exclamation"
+    );
+  }
+}
+
+
+function describirBeneficioPromocion(promocion) {
+  const valor = Number(
+    promocion.valorBeneficio
+  ) || 0;
+
+  switch (promocion.tipoBeneficio) {
+    case "Porcentaje":
+      return `${valor}% de descuento`;
+
+    case "Horas gratis":
+      return `${valor} hora${
+        valor === 1 ? "" : "s"
+      } gratis`;
+
+    case "Minutos gratis":
+      return `${valor} minutos gratis`;
+
+    case "Exoneracion total":
+      return "Estacionamiento completamente gratuito";
+
+    case "Monto fijo":
+      return `Descuento fijo de S/ ${valor.toFixed(2)}`;
+
+    default:
+      return "Beneficio registrado";
+  }
+}
+
 function renderPromos(){
   const el=document.getElementById('promos-list');
   if(!el)return;
@@ -3131,7 +3606,7 @@ function renderPromos(){
         <div style="font-size:11px;color:var(--text-secondary)">Consumo ≥ ${p.min} → ${p.benefit}</div>
         <div style="font-size:10px;color:var(--text-muted)">${p.from} al ${p.to}</div>
       </div>
-      <span class="badge ${p.status==='Activa'?'badge-green':'badge-gray'}">${p.status}</span>
+      <span class="badge ${p.status==="Activa"?"badge-green":p.status==="Vencida"?"badge-red":"badge-gray"}">${p.status}</span>
       <div style="display:flex;gap:4px;margin-left:4px">
         <button class="btn btn-ghost btn-sm" onclick="togglePromo(${i})" title="${p.status==='Activa'?'Desactivar':'Activar'}"><i class="fa-solid fa-${p.status==='Activa'?'pause':'play'}"></i></button>
         <button class="btn btn-ghost btn-sm" onclick="openPromoModal(${i})" title="Editar promoción"><i class="fa-solid fa-pen"></i></button>
