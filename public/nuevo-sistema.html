@@ -915,18 +915,40 @@ tbody tr:hover{background:var(--bg-hover)}
       <div class="section-hd" style="margin-bottom:16px">
         <div><div class="section-title">Administración IoT</div><div class="section-sub">Monitoreo de dispositivos y sensores del sistema</div></div>
         <div style="display:flex;gap:8px">
-          <span class="badge badge-green"><span class="status-dot dot-green" style="margin:0;margin-right:4px"></span>7 Online</span>
-          <span class="badge badge-amber">1 Advertencia</span>
-          <button class="btn btn-ghost btn-sm" onclick="showToast('info','Sincronizando dispositivos...','fa-rotate')"><i class="fa-solid fa-rotate"></i></button>
+          <span class="badge badge-green" id="iot-online-badge"><span class="status-dot dot-green" style="margin:0;margin-right:4px"></span>0 Online</span>
+          <span class="badge badge-purple" id="iot-alert-badge">0 Alertas</span>
+          <button class="btn btn-ghost btn-sm" id="iot-refresh-btn" onclick="recargarDatosIoT()" title="Actualizar datos IoT"><i class="fa-solid fa-rotate"></i></button>
         </div>
       </div>
       <!-- KPIs IoT -->
       <div class="kpi-grid" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr));margin-bottom:20px">
-        <div class="kpi-card"><div class="kpi-label">Latencia Promedio</div><div class="kpi-value" style="font-size:18px">14ms</div><div class="kpi-sub" style="color:var(--green)">Excelente</div></div>
-        <div class="kpi-card"><div class="kpi-label">Última Sincronización</div><div class="kpi-value" style="font-size:14px">Hace 12s</div></div>
-        <div class="kpi-card"><div class="kpi-label">Uso de Red</div><div class="kpi-value" style="font-size:18px">2.4 MB/s</div></div>
-        <div class="kpi-card"><div class="kpi-label">Eventos Hoy</div><div class="kpi-value" style="font-size:18px">1,284</div></div>
-        <div class="kpi-card"><div class="kpi-label">Uptime</div><div class="kpi-value" style="font-size:18px">99.8%</div><div class="kpi-sub" style="color:var(--green)">30 días</div></div>
+        <div class="kpi-card">
+          <div class="kpi-label">Latencia Promedio</div>
+          <div class="kpi-value" id="iot-kpi-latencia" style="font-size:18px">0 ms</div>
+          <div class="kpi-sub" id="iot-kpi-latencia-estado">Sin datos</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label">Última Sincronización</div>
+          <div class="kpi-value" id="iot-kpi-sincronizacion" style="font-size:14px">Sin registros</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label">Uso de Red</div>
+          <div class="kpi-value" id="iot-kpi-red" style="font-size:18px">—</div>
+          <div class="kpi-sub">No medido</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label">Eventos Hoy</div>
+          <div class="kpi-value" id="iot-kpi-eventos" style="font-size:18px">0</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label">Uptime</div>
+          <div class="kpi-value" id="iot-kpi-uptime" style="font-size:18px">—</div>
+          <div class="kpi-sub">No calculado</div>
+        </div>
       </div>
       <!-- Device cards -->
       <div id="iot-devices" class="grid-auto" style="margin-bottom:20px"></div>
@@ -934,7 +956,7 @@ tbody tr:hover{background:var(--bg-hover)}
       <div class="chart-card">
         <div class="chart-card-hd" style="margin-bottom:10px">
           <div><div class="chart-title">Log de Eventos IoT</div><div class="chart-sub">Últimos eventos del sistema</div></div>
-          <button class="btn btn-ghost btn-sm" onclick="showToast('info','Log limpiado','fa-trash')"><i class="fa-solid fa-trash"></i></button>
+          <button class="btn btn-ghost btn-sm" style="display:none" title="El log real no puede eliminarse desde esta vista"><i class="fa-solid fa-trash"></i></button>
         </div>
         <div style="background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);max-height:280px;overflow-y:auto" id="iot-logs"></div>
       </div>
@@ -1149,31 +1171,9 @@ let historialVisible = [];
 
 let EVENTS_DATA = [];
 
-const IOT_DEVICES = [
-  {name:'ESP32 Principal',icon:'fa-microchip',status:'online',signal:95,uptime:'29d 14h',last:'Hace 5s',ip:'192.168.1.101',connection:'wifi'},
-  {name:'ESP32-CAM',icon:'fa-camera',status:'online',signal:88,uptime:'29d 14h',last:'Hace 8s',ip:'192.168.1.105',connection:'wifi'},
-  {name:'RFID RC522',icon:'fa-satellite-dish',status:'online',signal:92,uptime:'29d 13h',last:'Hace 2s',ip:'I2C-0x28',connection:'cable'},
-  {name:'Sensor Entrada',icon:'fa-code-branch',status:'online',signal:97,uptime:'29d 14h',last:'Hace 1s',ip:'GPIO-D4',connection:'cable'},
-  {name:'Sensor Salida',icon:'fa-code-merge',status:'warning',signal:61,uptime:'28d 02h',last:'Hace 45s',ip:'GPIO-D5',connection:'cable'},
-  {name:'Sensores Estac.',icon:'fa-square-parking',status:'online',signal:84,uptime:'29d 14h',last:'Hace 3s',ip:'I2C-Bus',connection:'cable'},
-  {name:'Pantalla OLED',icon:'fa-desktop',status:'online',signal:100,uptime:'29d 14h',last:'Hace 6s',ip:'I2C-0x3C',connection:'cable'},
-  {name:'Módulo WiFi',icon:'fa-wifi',status:'online',signal:79,uptime:'29d 14h',last:'Hace 2s',ip:'192.168.1.1',connection:'wifi'},
-];
+let IOT_DEVICES = [];
 
-const IOT_LOGS = [
-  {time:'14:37:22',level:'OK',msg:'RFID detectado: TAG-0041 · Trabajador autenticado'},
-  {time:'14:37:05',level:'INFO',msg:'Vehículo ingresó: ABC-123 · Espacio A-12 asignado'},
-  {time:'14:36:58',level:'OK',msg:'Barrera de entrada abierta · Sensor confirmado'},
-  {time:'14:36:30',level:'WARN',msg:'Sensor B-07 sin respuesta · Reintentando conexión...'},
-  {time:'14:35:12',level:'OK',msg:'Vehículo salió: LMN-007 · Duración 2h15m · S/ 7.00'},
-  {time:'14:34:47',level:'INFO',msg:'ESP32-CAM: Frame capturado · 2 vehículos detectados'},
-  {time:'14:33:22',level:'OK',msg:'Promoción aplicada: Consumo S/250 → Exoneración total'},
-  {time:'14:32:15',level:'INFO',msg:'OLED actualizado: 1 espacio libre / 10 total'},
-  {time:'14:31:08',level:'OK',msg:'Sincronización NTP completada · Offset: +0.002s'},
-  {time:'14:30:00',level:'INFO',msg:'Heartbeat: 7/8 dispositivos online · Latencia avg 14ms'},
-  {time:'14:28:44',level:'ERR',msg:'Sensor B-07: Timeout · Reconectando (intento 3/5)'},
-  {time:'14:27:19',level:'OK',msg:'Barrera de salida cerrada · Sistema en reposo'},
-];
+let IOT_LOGS = [];
 
 let rolesData = [
   {name:'Usuario Común',icon:'fa-user',discount:'0%',hours:'0h gratis',color:'gray',desc:'Tarifa estándar sin beneficios'},
@@ -1247,6 +1247,9 @@ async function init(){
   await cargarRolesReales();
   await cargarPromocionesReales();
   await cargarEstablecimientosReales();
+  await cargarDispositivosIoTReales();
+  await cargarResumenIoTReal();
+  await cargarLogsIoTReales();
 
 }
 
@@ -3114,45 +3117,608 @@ async function cargarHistorialReal() {
 // ============================================================
 // IoT
 // ============================================================
-function renderIoTDevices(){
-  const el=document.getElementById('iot-devices');
-  if(!el)return;
-  el.innerHTML=IOT_DEVICES.map(d=>{
-    const pct=d.signal;
-    const statusColor=d.status==='online'?'var(--green)':d.status==='warning'?'var(--amber)':'var(--red)';
-    const statusBg=d.status==='online'?'var(--green-bg)':d.status==='warning'?'var(--amber-bg)':'var(--red-bg)';
-    const bars=[...Array(5)].map((_,i)=>`<div class="bar ${i<Math.ceil(pct/20)?'active':''}" style="height:${6+i*3}px"></div>`).join('');
-    const isWifi=d.connection==='wifi';
-    return `
-      <div class="device-card">
-        <div class="device-header">
-          <div style="display:flex;align-items:center;gap:8px">
-            <div style="width:34px;height:34px;border-radius:var(--radius-sm);background:var(--accent-glow);display:flex;align-items:center;justify-content:center;color:var(--accent)"><i class="fa-solid ${d.icon}" style="font-size:17px"></i></div>
-            <div class="device-name">${d.name}</div>
-          </div>
-          <div class="device-status" style="color:${statusColor};background:${statusBg};padding:3px 8px;border-radius:20px;font-size:10px">${d.status.toUpperCase()}</div>
-        </div>
-        <div class="stat-row"><span class="stat-label">Conexión</span><span class="badge ${isWifi?'badge-blue':'badge-teal'}"><i class="fa-solid ${isWifi?'fa-wifi':'fa-plug'}" style="font-size:11px"></i> ${isWifi?'WiFi':'Cable'}</span></div>
-        <div class="stat-row"><span class="stat-label">Señal</span><div style="display:flex;align-items:center;gap:6px"><div class="signal-bars">${bars}</div><span class="stat-val">${pct}%</span></div></div>
-        <div class="stat-row"><span class="stat-label">IP / Bus</span><span class="stat-val" style="font-family:monospace;font-size:11px">${d.ip}</span></div>
-        <div class="stat-row"><span class="stat-label">Uptime</span><span class="stat-val">${d.uptime}</span></div>
-        <div class="stat-row"><span class="stat-label">Último evento</span><span class="stat-val" style="color:var(--text-secondary)">${d.last}</span></div>
+function renderIoTDevices() {
+  const contenedor =
+    document.getElementById("iot-devices");
+
+  if (!contenedor) {
+    return;
+  }
+
+  if (IOT_DEVICES.length === 0) {
+    contenedor.innerHTML = `
+      <div class="chart-card" style="grid-column:1/-1;text-align:center;color:var(--text-muted)">
+        No existen dispositivos IoT registrados.
       </div>
     `;
-  }).join('');
+    return;
+  }
+
+  contenedor.innerHTML = IOT_DEVICES.map(
+    (dispositivo) => {
+      const porcentaje = Math.max(
+        0,
+        Math.min(100, dispositivo.signal)
+      );
+
+      const estado = dispositivo.status;
+
+      const colorEstado =
+        estado === "online"
+          ? "var(--green)"
+          : estado === "advertencia"
+            ? "var(--amber)"
+            : estado === "mantenimiento"
+              ? "var(--purple)"
+              : "var(--red)";
+
+      const fondoEstado =
+        estado === "online"
+          ? "var(--green-bg)"
+          : estado === "advertencia"
+            ? "var(--amber-bg)"
+            : estado === "mantenimiento"
+              ? "var(--purple-bg)"
+              : "var(--red-bg)";
+
+      const barras = [...Array(5)]
+        .map(
+          (_, indice) => `
+            <div
+              class="bar ${
+                indice < Math.ceil(porcentaje / 20)
+                  ? "active"
+                  : ""
+              }"
+              style="height:${6 + indice * 3}px"
+            ></div>
+          `
+        )
+        .join("");
+
+      const conexionWifi =
+        dispositivo.connection === "WiFi";
+
+      return `
+        <div class="device-card">
+          <div class="device-header">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:34px;height:34px;border-radius:var(--radius-sm);background:var(--accent-glow);display:flex;align-items:center;justify-content:center;color:var(--accent)">
+                <i class="fa-solid ${dispositivo.icon}" style="font-size:17px"></i>
+              </div>
+
+              <div>
+                <div class="device-name">${dispositivo.name}</div>
+                <div style="font-size:10px;color:var(--text-muted)">
+                  ${dispositivo.codigo}
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="device-status"
+              style="color:${colorEstado};background:${fondoEstado};padding:3px 8px;border-radius:20px;font-size:10px"
+            >
+              ${estado.toUpperCase()}
+            </div>
+          </div>
+
+          <div class="stat-row">
+            <span class="stat-label">Tipo</span>
+            <span class="stat-val">${dispositivo.tipo}</span>
+          </div>
+
+          <div class="stat-row">
+            <span class="stat-label">Conexión</span>
+            <span class="badge ${conexionWifi ? "badge-blue" : "badge-teal"}">
+              <i class="fa-solid ${conexionWifi ? "fa-wifi" : "fa-plug"}" style="font-size:11px"></i>
+              ${dispositivo.connection}
+            </span>
+          </div>
+
+          <div class="stat-row">
+            <span class="stat-label">Señal</span>
+
+            <div style="display:flex;align-items:center;gap:6px">
+              <div class="signal-bars">${barras}</div>
+              <span class="stat-val">${porcentaje}%</span>
+            </div>
+          </div>
+
+          <div class="stat-row">
+            <span class="stat-label">Dirección</span>
+            <span class="stat-val" style="font-family:monospace;font-size:11px">
+              ${dispositivo.ip}
+            </span>
+          </div>
+
+          <div class="stat-row">
+            <span class="stat-label">Latencia</span>
+            <span class="stat-val">${dispositivo.latency} ms</span>
+          </div>
+
+          <div class="stat-row">
+            <span class="stat-label">Ubicación</span>
+            <span class="stat-val">${dispositivo.location}</span>
+          </div>
+
+          <div class="stat-row">
+            <span class="stat-label">Última lectura</span>
+            <span class="stat-val" style="color:var(--text-secondary)">
+              ${dispositivo.last}
+            </span>
+          </div>
+        </div>
+      `;
+    }
+  ).join("");
 }
 
-function renderIoTLogs(){
-  const el=document.getElementById('iot-logs');
-  if(!el)return;
-  const levelMap={OK:'log-ok',INFO:'log-info',WARN:'log-warn',ERR:'log-err'};
-  el.innerHTML=IOT_LOGS.map(l=>`
-    <div class="log-line">
-      <span class="log-time">${l.time}</span>
-      <span class="log-level ${levelMap[l.level]||'log-info'}">[${l.level}]</span>
-      <span style="color:var(--text-secondary)">${l.msg}</span>
-    </div>
-  `).join('');
+function formatearSincronizacionIoT(fecha) {
+  if (!fecha) {
+    return "Sin registros";
+  }
+
+  const fechaConvertida = new Date(fecha);
+
+  if (Number.isNaN(fechaConvertida.getTime())) {
+    return String(fecha);
+  }
+
+  return fechaConvertida.toLocaleString("es-PE", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+async function recargarDatosIoT() {
+  const boton =
+    document.getElementById("iot-refresh-btn");
+
+  const icono = boton?.querySelector("i");
+
+  try {
+    if (boton) {
+      boton.disabled = true;
+    }
+
+    if (icono) {
+      icono.classList.add("fa-spin");
+    }
+
+    await Promise.all([
+      cargarDispositivosIoTReales(),
+      cargarResumenIoTReal(),
+      cargarLogsIoTReales()
+    ]);
+
+    showToast(
+      "success",
+      "Datos IoT actualizados",
+      "fa-check"
+    );
+  } catch (error) {
+    console.error(
+      "Error al actualizar Administración IoT:",
+      error
+    );
+
+    showToast(
+      "error",
+      "No se pudieron actualizar los datos IoT",
+      "fa-triangle-exclamation"
+    );
+  } finally {
+    if (boton) {
+      boton.disabled = false;
+    }
+
+    if (icono) {
+      icono.classList.remove("fa-spin");
+    }
+  }
+}
+
+async function cargarResumenIoTReal() {
+  try {
+    const respuesta = await fetch(
+      "/api/v2/iot/resumen"
+    );
+
+    if (!respuesta.ok) {
+      throw new Error(
+        "No se pudo obtener el resumen IoT"
+      );
+    }
+
+    const datos = await respuesta.json();
+
+    if (!datos.ok || !datos.resumen) {
+      throw new Error(
+        datos.mensaje ||
+        "El resumen IoT recibido no es válido"
+      );
+    }
+
+    const resumen = datos.resumen;
+
+    const totalAlertas =
+      Number(resumen.dispositivosOffline || 0) +
+      Number(resumen.dispositivosAdvertencia || 0) +
+      Number(resumen.dispositivosMantenimiento || 0);
+
+    const latencia =
+      Number(resumen.latenciaPromedioMs) || 0;
+
+    const badgeOnline =
+      document.getElementById("iot-online-badge");
+
+    const badgeAlertas =
+      document.getElementById("iot-alert-badge");
+
+    const kpiLatencia =
+      document.getElementById("iot-kpi-latencia");
+
+    const kpiLatenciaEstado =
+      document.getElementById(
+        "iot-kpi-latencia-estado"
+      );
+
+    const kpiSincronizacion =
+      document.getElementById(
+        "iot-kpi-sincronizacion"
+      );
+
+    const kpiEventos =
+      document.getElementById("iot-kpi-eventos");
+
+    if (badgeOnline) {
+      badgeOnline.innerHTML = `
+        <span
+          class="status-dot dot-green"
+          style="margin:0;margin-right:4px"
+        ></span>
+        ${Number(resumen.dispositivosOnline)} Online
+      `;
+    }
+
+    if (badgeAlertas) {
+      badgeAlertas.textContent =
+        `${totalAlertas} ${
+          totalAlertas === 1 ? "Alerta" : "Alertas"
+        }`;
+
+      badgeAlertas.title =
+        `${Number(resumen.dispositivosOffline)} offline, ` +
+        `${Number(resumen.dispositivosAdvertencia)} en advertencia y ` +
+        `${Number(resumen.dispositivosMantenimiento)} en mantenimiento`;
+    }
+
+    if (kpiLatencia) {
+      kpiLatencia.textContent =
+        `${latencia} ms`;
+    }
+
+    if (kpiLatenciaEstado) {
+      if (latencia <= 20) {
+        kpiLatenciaEstado.textContent = "Excelente";
+        kpiLatenciaEstado.style.color = "var(--green)";
+      } else if (latencia <= 50) {
+        kpiLatenciaEstado.textContent = "Aceptable";
+        kpiLatenciaEstado.style.color = "var(--amber)";
+      } else {
+        kpiLatenciaEstado.textContent = "Latencia alta";
+        kpiLatenciaEstado.style.color = "var(--red)";
+      }
+    }
+
+    if (kpiSincronizacion) {
+      kpiSincronizacion.textContent =
+        formatearSincronizacionIoT(
+          resumen.ultimaSincronizacion
+        );
+    }
+
+    if (kpiEventos) {
+      kpiEventos.textContent =
+        Number(resumen.eventosHoy) || 0;
+    }
+
+    console.log(
+      "Resumen IoT actualizado con datos reales",
+      resumen
+    );
+  } catch (error) {
+    console.error(
+      "Error al cargar el resumen IoT:",
+      error
+    );
+
+    showToast(
+      "error",
+      "No se pudo cargar el resumen IoT",
+      "fa-triangle-exclamation"
+    );
+  }
+}
+
+function obtenerIconoDispositivoIoT(tipo) {
+  const iconos = {
+    "ESP32": "fa-microchip",
+    "ESP32-CAM": "fa-camera",
+    "RFID": "fa-satellite-dish",
+    "Sensor": "fa-wave-square",
+    "OLED": "fa-desktop",
+    "Servomotor": "fa-gears",
+    "Puntero laser": "fa-bullseye",
+    "LDR": "fa-sun",
+    "Potenciometro": "fa-sliders",
+    "Otro": "fa-plug"
+  };
+
+  return iconos[tipo] || "fa-plug";
+}
+
+
+function formatearFechaIoT(fecha) {
+  if (!fecha) {
+    return "Sin registro";
+  }
+
+  const partes = String(fecha).split(" ");
+
+  if (partes.length !== 2) {
+    return fecha;
+  }
+
+  const fechaPartes = partes[0].split("-");
+
+  if (fechaPartes.length !== 3) {
+    return fecha;
+  }
+
+  return `${fechaPartes[2]}/${fechaPartes[1]}/${fechaPartes[0]} ${partes[1]}`;
+}
+
+
+async function cargarDispositivosIoTReales() {
+  try {
+    const respuesta = await fetch(
+      "/api/v2/iot/dispositivos"
+    );
+
+    if (!respuesta.ok) {
+      throw new Error(
+        "No se pudieron obtener los dispositivos IoT"
+      );
+    }
+
+    const datos = await respuesta.json();
+
+    if (
+      !datos.ok ||
+      !Array.isArray(datos.dispositivos)
+    ) {
+      throw new Error(
+        datos.mensaje ||
+        "La respuesta de dispositivos no es válida"
+      );
+    }
+
+    IOT_DEVICES = datos.dispositivos.map(
+      (dispositivo) => ({
+        idDispositivo:
+          dispositivo.idDispositivo,
+
+        codigo:
+          dispositivo.codigo,
+
+        name:
+          dispositivo.nombre,
+
+        icon:
+          obtenerIconoDispositivoIoT(
+            dispositivo.tipoDispositivo
+          ),
+
+        tipo:
+          dispositivo.tipoDispositivo,
+
+        status:
+          String(dispositivo.estado).toLowerCase(),
+
+        signal:
+          Number(dispositivo.intensidadSenal) || 0,
+
+        latency:
+          Number(dispositivo.latenciaMs) || 0,
+
+        uptime:
+          "No calculado",
+
+        last:
+          formatearFechaIoT(
+            dispositivo.ultimaLectura ||
+            dispositivo.ultimaConexion
+          ),
+
+        ip:
+          dispositivo.direccionRed ||
+          "Sin dirección",
+
+        connection:
+          dispositivo.tipoConexion || "Otro",
+
+        location:
+          dispositivo.ubicacion ||
+          "Ubicación no registrada",
+
+        description:
+          dispositivo.descripcion || ""
+      })
+    );
+
+    renderIoTDevices();
+
+    console.log(
+      "Dispositivos IoT actualizados con datos reales",
+      IOT_DEVICES
+    );
+  } catch (error) {
+    console.error(
+      "Error al cargar los dispositivos IoT:",
+      error
+    );
+
+    IOT_DEVICES = [];
+    renderIoTDevices();
+
+    showToast(
+      "error",
+      "No se pudieron cargar los dispositivos IoT",
+      "fa-triangle-exclamation"
+    );
+  }
+}
+
+function obtenerHoraLogIoT(fecha) {
+  if (!fecha) {
+    return "--:--:--";
+  }
+
+  const partes = String(fecha).split(" ");
+
+  return partes.length === 2
+    ? partes[1]
+    : String(fecha);
+}
+
+
+function escaparTextoIoT(valor) {
+  return String(valor ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+
+async function cargarLogsIoTReales() {
+  try {
+    const respuesta = await fetch(
+      "/api/v2/iot/logs?limite=30"
+    );
+
+    if (!respuesta.ok) {
+      throw new Error(
+        "No se pudieron obtener los logs IoT"
+      );
+    }
+
+    const datos = await respuesta.json();
+
+    if (!datos.ok || !Array.isArray(datos.logs)) {
+      throw new Error(
+        datos.mensaje ||
+        "La respuesta de logs no es válida"
+      );
+    }
+
+    IOT_LOGS = datos.logs.map((log) => ({
+      idLog: log.idLog,
+
+      time:
+        obtenerHoraLogIoT(log.fechaHora),
+
+      date:
+        formatearFechaIoT(log.fechaHora),
+
+      level:
+        log.nivel,
+
+      code:
+        log.codigoEvento || "SIN_CODIGO",
+
+      msg:
+        `${log.dispositivo}: ${log.mensaje}`
+    }));
+
+    renderIoTLogs();
+
+    console.log(
+      "Logs IoT actualizados con datos reales",
+      IOT_LOGS
+    );
+  } catch (error) {
+    console.error(
+      "Error al cargar los logs IoT:",
+      error
+    );
+
+    IOT_LOGS = [];
+    renderIoTLogs();
+
+    showToast(
+      "error",
+      "No se pudieron cargar los logs IoT",
+      "fa-triangle-exclamation"
+    );
+  }
+}
+
+function renderIoTLogs() {
+  const contenedor =
+    document.getElementById("iot-logs");
+
+  if (!contenedor) {
+    return;
+  }
+
+  if (IOT_LOGS.length === 0) {
+    contenedor.innerHTML = `
+      <div style="padding:20px;text-align:center;color:var(--text-muted)">
+        No existen registros IoT disponibles.
+      </div>
+    `;
+    return;
+  }
+
+  const clasesPorNivel = {
+    OK: "log-ok",
+    INFO: "log-info",
+    WARN: "log-warn",
+    ERROR: "log-err",
+    ERR: "log-err",
+    DEBUG: "log-info"
+  };
+
+  contenedor.innerHTML = IOT_LOGS.map(
+    (log) => `
+      <div class="log-line" title="${escaparTextoIoT(log.date)}">
+        <span class="log-time">
+          ${escaparTextoIoT(log.time)}
+        </span>
+
+        <span class="log-level ${
+          clasesPorNivel[log.level] || "log-info"
+        }">
+          [${escaparTextoIoT(log.level)}]
+        </span>
+
+        <span style="color:var(--text-muted);font-family:monospace;font-size:10px">
+          ${escaparTextoIoT(log.code)}
+        </span>
+
+        <span style="color:var(--text-secondary)">
+          ${escaparTextoIoT(log.msg)}
+        </span>
+      </div>
+    `
+  ).join("");
 }
 
 // ============================================================
