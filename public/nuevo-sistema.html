@@ -360,6 +360,7 @@ tbody tr:hover{background:var(--bg-hover)}
 .sublayout{display:flex;gap:16px}
 .sublayout-main{flex:1;min-width:0}
 .sublayout-side{width:300px;flex-shrink:0}
+#page-tariffs button{display:none!important}
 </style>
 </head>
 <body>
@@ -879,6 +880,7 @@ tbody tr:hover{background:var(--bg-hover)}
           </div>
         </div>
       </div>
+    </div>
 
       <!-- Tab 2: Roles -->
       <div id="tariffs-t2" style="display:none">
@@ -1215,7 +1217,7 @@ let currentVehicle = null;
 let activeTimeline = [...TIMELINE_BASE];
 let vehiclesData = [...VEHICLES_DATA];
 let promosData = [];
-let storesData = [...STORES_DATA];
+let storesData = [];
 let charts = {};
 let tarifaActual = null;
 
@@ -1244,6 +1246,7 @@ async function init(){
   await cargarTarifaReal();
   await cargarRolesReales();
   await cargarPromocionesReales();
+  await cargarEstablecimientosReales();
 
 }
 
@@ -3620,6 +3623,86 @@ function togglePromo(i){
   promosData[i].status=promosData[i].status==='Activa'?'Inactiva':'Activa';
   renderPromos();
   showToast('info',`Promoción ${promosData[i].status.toLowerCase()}`,'fa-tag');
+}
+
+async function cargarEstablecimientosReales() {
+  try {
+    const respuesta = await fetch(
+      "/api/v2/configuracion/establecimientos"
+    );
+
+    if (!respuesta.ok) {
+      throw new Error(
+        "No se pudieron obtener los establecimientos"
+      );
+    }
+
+    const datos = await respuesta.json();
+
+    if (
+      !datos.ok ||
+      !Array.isArray(datos.establecimientos)
+    ) {
+      throw new Error(
+        datos.mensaje ||
+        "La respuesta de establecimientos no es válida"
+      );
+    }
+
+    storesData = datos.establecimientos.map(
+      (establecimiento) => ({
+        idEstablecimiento:
+          establecimiento.idEstablecimiento,
+
+        name:
+          establecimiento.nombre,
+
+        cat:
+          establecimiento.categoria,
+
+        icon:
+          establecimiento.icono ||
+          "fa-store",
+
+        location:
+          establecimiento.ubicacion ||
+          "Ubicación no registrada",
+
+        status:
+          establecimiento.estado,
+
+        kind:
+          establecimiento.tipoRegistro === "Tiempo"
+            ? "tiempo"
+            : "consumo",
+
+        description:
+          establecimiento.descripcion ||
+          ""
+      })
+    );
+
+    renderStores();
+
+    console.log(
+      "Establecimientos actualizados con datos reales",
+      storesData
+    );
+  } catch (error) {
+    console.error(
+      "Error al cargar los establecimientos reales:",
+      error
+    );
+
+    storesData = [];
+    renderStores();
+
+    showToast(
+      "error",
+      "No se pudieron cargar los establecimientos",
+      "fa-triangle-exclamation"
+    );
+  }
 }
 
 function renderStores(){
