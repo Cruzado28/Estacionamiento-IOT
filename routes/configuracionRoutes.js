@@ -201,4 +201,69 @@ router.get("/establecimientos", async (req, res) => {
   }
 });
 
+// ============================================================
+// GET /api/v2/configuracion/administrador
+// ============================================================
+router.get("/administrador", async (req, res) => {
+  try {
+    const [filas] = await db.query(`
+      SELECT
+        id_admin,
+        nombre,
+        correo,
+        usuario,
+        tema_preferido,
+        color_principal,
+        estado,
+        DATE_FORMAT(
+          creado_en,
+          '%Y-%m-%d %H:%i:%s'
+        ) AS creado_en,
+        DATE_FORMAT(
+          actualizado_en,
+          '%Y-%m-%d %H:%i:%s'
+        ) AS actualizado_en
+      FROM administradores
+      WHERE estado = 'Activo'
+      ORDER BY id_admin ASC
+      LIMIT 1
+    `);
+
+    if (filas.length === 0) {
+      return res.status(404).json({
+        ok: false,
+        mensaje: "No existe un administrador activo"
+      });
+    }
+
+    const administrador = filas[0];
+
+    return res.json({
+      ok: true,
+      administrador: {
+        idAdministrador: administrador.id_admin,
+        nombre: administrador.nombre,
+        correo: administrador.correo,
+        usuario: administrador.usuario,
+        temaPreferido: administrador.tema_preferido,
+        colorPrincipal: administrador.color_principal,
+        estado: administrador.estado,
+        creadoEn: administrador.creado_en,
+        actualizadoEn: administrador.actualizado_en
+      }
+    });
+  } catch (error) {
+    console.error(
+      "Error al obtener el administrador:",
+      error.message
+    );
+
+    return res.status(500).json({
+      ok: false,
+      mensaje: "Error al obtener el administrador",
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
