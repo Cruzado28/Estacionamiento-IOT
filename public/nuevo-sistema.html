@@ -1650,30 +1650,35 @@ async function cargarDashboardReal() {
       "Permanencia promedio"
     );
 
-    // Estas métricas todavía no tienen una API propia.
-    // Se ocultan los valores simulados para no mostrar datos falsos.
+    // Métricas adicionales calculadas desde MySQL.
     actualizarKpiDashboard(
       "HORAS EXONERADAS",
-      "—",
-      "Pendiente de cálculo"
+      `${Number(
+        resumen.horasExoneradasMes
+      ).toFixed(2)} h`,
+      "Acumulado del mes"
     );
 
     actualizarKpiDashboard(
       "DESCUENTOS APLICADOS",
-      "—",
-      "Pendiente de cálculo"
+      `S/ ${Number(
+        resumen.descuentosAplicadosDia
+      ).toFixed(2)}`,
+      "Descuentos registrados hoy"
     );
 
     actualizarKpiDashboard(
       "USUARIOS VIP",
-      "—",
-      "Pendiente de cálculo"
+      Number(resumen.usuariosVip),
+      "Conductores con beneficios VIP"
     );
 
     actualizarKpiDashboard(
       "CONSUMO REGISTRADO",
-      "—",
-      "Pendiente de cálculo"
+      `S/ ${Number(
+        resumen.consumoRegistradoDia
+      ).toFixed(2)}`,
+      "Consumo registrado hoy"
     );
 
     // Eliminar el mapa simulado anterior.

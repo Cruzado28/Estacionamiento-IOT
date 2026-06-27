@@ -27,6 +27,102 @@ router.get("/resumen", async (req, res) => {
       LIMIT 1
     `);
 
+        const [filasMetricas] = await db.query(`
+      SELECT
+
+        (
+          SELECT
+            ROUND(
+              COALESCE(
+                SUM(
+                  CASE
+                    WHEN r.exoneracion_total = 1
+                      THEN COALESCE(s.tiempo_minutos, 0)
+
+                    WHEN r.horas_gratis > 0
+                      THEN LEAST(
+                        COALESCE(s.tiempo_minutos, 0),
+                        r.horas_gratis * 60
+                      )
+
+                    ELSE 0
+                  END
+                ),
+                0
+              ) / 60,
+              2
+            )
+
+          FROM sesiones_parqueo s
+
+          INNER JOIN vehiculos v
+            ON v.id_vehiculo = s.vehiculo_id
+
+          INNER JOIN roles r
+            ON r.id_rol = v.rol_id
+
+          WHERE s.estado IN (
+            'Pagada',
+            'Finalizada',
+            'Penalizada'
+          )
+
+          AND DATE_FORMAT(
+            COALESCE(
+              s.fecha_hora_pago,
+              s.fecha_hora_salida,
+              s.fecha_hora_ingreso
+            ),
+            '%Y-%m'
+          ) = DATE_FORMAT(CURDATE(), '%Y-%m')
+        ) AS horas_exoneradas_mes,
+
+        (
+          SELECT COALESCE(
+            SUM(s.monto_descuento),
+            0
+          )
+
+          FROM sesiones_parqueo s
+
+          WHERE DATE(s.fecha_hora_pago) = CURDATE()
+        ) AS descuentos_aplicados_dia,
+
+        (
+          SELECT COUNT(
+            DISTINCT v.conductor_id
+          )
+
+          FROM vehiculos v
+
+          INNER JOIN roles r
+            ON r.id_rol = v.rol_id
+
+          WHERE v.estado = 'Activo'
+            AND r.estado = 'Activo'
+            AND (
+              r.nombre LIKE '%VIP%'
+              OR r.prioridad_acceso IN (
+                'Alta',
+                'Maxima'
+              )
+            )
+        ) AS usuarios_vip,
+
+        (
+          SELECT COALESCE(
+            SUM(s.monto_consumo),
+            0
+          )
+
+          FROM sesiones_parqueo s
+
+          WHERE DATE(
+            s.fecha_hora_ingreso
+          ) = CURDATE()
+        ) AS consumo_registrado_dia
+    `);
+
     if (filas.length === 0) {
       return res.status(404).json({
         ok: false,
@@ -35,6 +131,9 @@ router.get("/resumen", async (req, res) => {
     }
 
     const datos = filas[0];
+
+    const metricas =
+      filasMetricas[0] || {};
 
     return res.json({
       ok: true,
@@ -61,6 +160,22 @@ router.get("/resumen", async (req, res) => {
         ),
         dispositivosConAlerta: Number(
           datos.dispositivos_con_alerta
+        ),
+
+        horasExoneradasMes: Number(
+          metricas.horas_exoneradas_mes
+        ),
+
+        descuentosAplicadosDia: Number(
+          metricas.descuentos_aplicados_dia
+        ),
+
+        usuariosVip: Number(
+          metricas.usuarios_vip
+        ),
+
+        consumoRegistradoDia: Number(
+          metricas.consumo_registrado_dia
         )
       }
     });
