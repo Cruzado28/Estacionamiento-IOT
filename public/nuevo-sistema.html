@@ -588,20 +588,60 @@ tbody tr:hover{background:var(--bg-hover)}
     <div class="page" id="page-monitor">
       <div class="section-hd" style="margin-bottom:16px">
         <div><div class="section-title">Monitoreo en Tiempo Real</div><div class="section-sub">Vista operativa · <span style="color:var(--green)">Sistema activo</span></div></div>
-        <button class="btn btn-primary btn-sm" onclick="showToast('info','Instantánea capturada','fa-camera')"><i class="fa-solid fa-camera"></i> Captura</button>
+        <button
+          class="btn btn-secondary btn-sm"
+          id="monitor-capture-btn"
+          disabled
+          title="La captura estará disponible cuando se conecte una cámara real"
+        >
+          <i class="fa-solid fa-camera"></i>
+          Captura no disponible
+        </button>
       </div>
       <div class="vehicle-panel">
         <!-- Camera feed -->
         <div class="camera-feed">
-          <div class="camera-top">
-            <span class="cam-rec"><span class="dot"></span>REC</span>
-            <div style="font-size:13px;font-weight:600">ESP32-CAM — Entrada Principal</div>
-            <div style="margin-left:auto;display:flex;gap:8px">
-              <span class="badge badge-green">Online</span>
-              <span style="font-size:11px;color:var(--text-muted)">192.168.1.105</span>
-            </div>
+        <div class="camera-top">
+          <span class="cam-rec" id="monitor-camera-rec">
+            <span class="dot"></span>
+            SIN SEÑAL
+          </span>
+
+          <div
+            id="monitor-camera-name"
+            style="font-size:13px;font-weight:600"
+          >
+            Cámara de entrada
           </div>
-          <div class="camera-live">
+
+          <div
+            style="
+              margin-left:auto;
+              display:flex;
+              gap:8px;
+              align-items:center;
+            "
+          >
+            <span
+              class="badge badge-gray"
+              id="monitor-camera-status"
+            >
+              Sin conexión
+            </span>
+
+            <span
+              id="monitor-camera-address"
+              style="
+                font-size:11px;
+                color:var(--text-muted);
+              "
+            >
+              Sin dirección
+            </span>
+          </div>
+        </div>
+
+                  <div class="camera-live">
             <div class="cam-overlay">
               <svg width="280" height="180" viewBox="0 0 280 180" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <rect width="280" height="180" fill="#0a0f1e"/>
@@ -649,6 +689,7 @@ tbody tr:hover{background:var(--bg-hover)}
             <div style="flex:1;min-width:120px"><div style="font-size:10px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px">FPS</div><div style="font-size:16px;font-weight:700">30</div></div>
             <div style="flex:1;min-width:120px"><div style="font-size:10px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px">Resolución</div><div style="font-size:16px;font-weight:700">1080p</div></div>
           </div>
+        </div>  
         </div>
 
         <!-- Vehicles list -->
