@@ -1576,6 +1576,127 @@ async function exportarDashboardPDF() {
   }
 }
 
+async function cargarGraficosDashboardReal() {
+  try {
+    const respuesta = await fetch(
+      "/api/v2/dashboard/graficos"
+    );
+
+    if (!respuesta.ok) {
+      throw new Error(
+        "No se pudieron obtener los gráficos"
+      );
+    }
+
+    const datos = await respuesta.json();
+
+    if (!datos.ok || !datos.graficos) {
+      throw new Error(
+        datos.mensaje ||
+        "La respuesta de gráficos no es válida"
+      );
+    }
+
+    const graficos = datos.graficos;
+
+    // Ocupación por hora
+    if (charts.hourly) {
+      charts.hourly.data.labels =
+        graficos.ocupacionPorHora.map(
+          (registro) => registro.etiqueta
+        );
+
+      charts.hourly.data.datasets[0].data =
+        graficos.ocupacionPorHora.map(
+          (registro) => Number(registro.total)
+        );
+
+      charts.hourly.update();
+    }
+
+    // Ingresos de los últimos siete días
+    if (charts.income) {
+      charts.income.data.labels =
+        graficos.ingresosPorDia.map(
+          (registro) => registro.etiqueta
+        );
+
+      charts.income.data.datasets[0].data =
+        graficos.ingresosPorDia.map(
+          (registro) => Number(registro.total)
+        );
+
+      charts.income.update();
+    }
+
+    // Vehículos registrados por tipo
+    if (charts.types) {
+      const tipos =
+        graficos.vehiculosPorTipo.length > 0
+          ? graficos.vehiculosPorTipo
+          : [
+              {
+                etiqueta: "Sin registros",
+                total: 0
+              }
+            ];
+
+      charts.types.data.labels =
+        tipos.map(
+          (registro) => registro.etiqueta
+        );
+
+      charts.types.data.datasets[0].data =
+        tipos.map(
+          (registro) => Number(registro.total)
+        );
+
+      charts.types.update();
+    }
+
+    // Vehículos con beneficios según su rol
+    if (charts.benefits) {
+      const beneficios =
+        graficos.usoBeneficios.length > 0
+          ? graficos.usoBeneficios
+          : [
+              {
+                etiqueta: "Sin beneficios",
+                total: 0
+              }
+            ];
+
+      charts.benefits.data.labels =
+        beneficios.map(
+          (registro) => registro.etiqueta
+        );
+
+      charts.benefits.data.datasets[0].data =
+        beneficios.map(
+          (registro) => Number(registro.total)
+        );
+
+      charts.benefits.update();
+    }
+
+    console.log(
+      "Gráficos del Dashboard actualizados con datos reales",
+      graficos
+    );
+  } catch (error) {
+    console.error(
+      "Error al cargar los gráficos reales:",
+      error
+    );
+
+    showToast(
+      "error",
+      "No se pudieron cargar los gráficos del Dashboard",
+      "fa-chart-column"
+    );
+  }
+}
+
 async function cargarDashboardReal() {
   try {
     const [
@@ -1698,6 +1819,8 @@ async function cargarDashboardReal() {
 
     // Volver a dibujar el gemelo digital.
     renderParkingMap();
+    
+    await cargarGraficosDashboardReal();
 
     const contadorMonitor =
       document.getElementById("v-feed-count");
@@ -2186,10 +2309,20 @@ function initCharts(){
   }
 }
 
-function reinitCharts(){
-  Object.values(charts).forEach(c=>{if(c&&c.destroy)c.destroy();});
-  charts={};
-  setTimeout(initCharts,50);
+function reinitCharts() {
+  Object.values(charts).forEach((grafico) => {
+    if (grafico && grafico.destroy) {
+      grafico.destroy();
+    }
+  });
+
+  charts = {};
+
+  setTimeout(async () => {
+    initCharts();
+
+    await cargarGraficosDashboardReal();
+  }, 50);
 }
 
 // ============================================================

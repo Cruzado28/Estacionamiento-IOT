@@ -715,4 +715,177 @@ router.get("/exportar/pdf", async (req, res) => {
   }
 });
 
+// ============================================================
+// GET /api/v2/dashboard/graficos
+// ============================================================
+router.get("/graficos", async (req, res) => {
+  try {
+    const [
+      [ocupacionPorHora],
+      [ingresosPorDia],
+      [vehiculosPorTipo],
+      [usoBeneficios]
+    ] = await Promise.all([
+      // Ocupación real de cada hora del día actual.
+      db.query(`
+        WITH RECURSIVE horas AS (
+          SELECT 6 AS hora
+
+          UNION ALL
+
+          SELECT hora + 1
+          FROM horas
+          WHERE hora < 21
+        )
+
+        SELECT
+          h.hora,
+
+          COUNT(s.id_sesion) AS total
+
+        FROM horas h
+
+        LEFT JOIN sesiones_parqueo s
+          ON s.fecha_hora_ingreso <
+            TIMESTAMP(
+              CURDATE(),
+              MAKETIME(h.hora + 1, 0, 0)
+            )
+
+          AND COALESCE(
+            s.fecha_hora_salida,
+            NOW()
+          ) >= TIMESTAMP(
+            CURDATE(),
+            MAKETIME(h.hora, 0, 0)
+          )
+
+        GROUP BY h.hora
+
+        ORDER BY h.hora ASC
+      `),
+
+      // Ingresos reales de los últimos siete días.
+      db.query(`
+        WITH RECURSIVE fechas AS (
+          SELECT
+            CURDATE() - INTERVAL 6 DAY AS fecha
+
+          UNION ALL
+
+          SELECT fecha + INTERVAL 1 DAY
+          FROM fechas
+          WHERE fecha < CURDATE()
+        )
+
+        SELECT
+          DATE_FORMAT(
+            f.fecha,
+            '%d/%m'
+          ) AS etiqueta,
+
+          COALESCE(
+            SUM(p.monto),
+            0
+          ) AS total
+
+        FROM fechas f
+
+        LEFT JOIN pagos p
+          ON DATE(p.fecha_pago) = f.fecha
+          AND p.estado = 'Completado'
+
+        GROUP BY f.fecha
+
+        ORDER BY f.fecha ASC
+      `),
+
+      // Cantidad real de vehículos registrados por tipo.
+      db.query(`
+        SELECT
+          tipo AS etiqueta,
+          COUNT(*) AS total
+
+        FROM vehiculos
+
+        WHERE estado = 'Activo'
+
+        GROUP BY tipo
+
+        ORDER BY total DESC, tipo ASC
+      `),
+
+      // Vehículos que cuentan con beneficios según su rol.
+      db.query(`
+        SELECT
+          r.nombre AS etiqueta,
+
+          COUNT(v.id_vehiculo) AS total
+
+        FROM roles r
+
+        LEFT JOIN vehiculos v
+          ON v.rol_id = r.id_rol
+          AND v.estado = 'Activo'
+
+        WHERE r.estado = 'Activo'
+
+          AND (
+            r.porcentaje_descuento > 0
+            OR r.horas_gratis > 0
+            OR r.exoneracion_total = 1
+          )
+
+        GROUP BY
+          r.id_rol,
+          r.nombre
+
+        ORDER BY total DESC, r.nombre ASC
+      `)
+    ]);
+
+    return res.json({
+      ok: true,
+
+      graficos: {
+        ocupacionPorHora:
+          ocupacionPorHora.map((registro) => ({
+            etiqueta: `${registro.hora}h`,
+            total: Number(registro.total)
+          })),
+
+        ingresosPorDia:
+          ingresosPorDia.map((registro) => ({
+            etiqueta: registro.etiqueta,
+            total: Number(registro.total)
+          })),
+
+        vehiculosPorTipo:
+          vehiculosPorTipo.map((registro) => ({
+            etiqueta: registro.etiqueta,
+            total: Number(registro.total)
+          })),
+
+        usoBeneficios:
+          usoBeneficios.map((registro) => ({
+            etiqueta: registro.etiqueta,
+            total: Number(registro.total)
+          }))
+      }
+    });
+  } catch (error) {
+    console.error(
+      "Error al obtener los gráficos del dashboard:",
+      error.message
+    );
+
+    return res.status(500).json({
+      ok: false,
+      mensaje:
+        "Error al obtener los gráficos del dashboard",
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
