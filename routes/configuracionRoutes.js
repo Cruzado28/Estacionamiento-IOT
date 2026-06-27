@@ -266,4 +266,297 @@ router.get("/administrador", async (req, res) => {
   }
 });
 
+// ============================================================
+// GET /api/v2/configuracion/sistema
+// ============================================================
+router.get("/sistema", async (req, res) => {
+  try {
+    const [filas] = await db.query(`
+      SELECT
+        id_configuracion,
+        nombre_estacionamiento,
+        tiempo_maximo_horas,
+        alertas_visuales,
+        alertas_sonoras,
+        correos_automaticos,
+        alertas_sensores_desconectados,
+        DATE_FORMAT(
+          actualizado_en,
+          '%Y-%m-%d %H:%i:%s'
+        ) AS actualizado_en
+      FROM configuracion_sistema
+      WHERE id_configuracion = 1
+      LIMIT 1
+    `);
+
+    if (filas.length === 0) {
+      return res.status(404).json({
+        ok: false,
+        mensaje: "No existe la configuración del sistema"
+      });
+    }
+
+    const [[conteoEspacios]] = await db.query(`
+      SELECT COUNT(*) AS total_espacios
+      FROM espacios
+    `);
+
+    const configuracion = filas[0];
+
+    return res.json({
+      ok: true,
+      configuracion: {
+        idConfiguracion:
+          configuracion.id_configuracion,
+
+        nombreEstacionamiento:
+          configuracion.nombre_estacionamiento,
+
+        numeroEspacios:
+          Number(conteoEspacios.total_espacios),
+
+        tiempoMaximoHoras:
+          Number(configuracion.tiempo_maximo_horas),
+
+        alertasVisuales:
+          Boolean(configuracion.alertas_visuales),
+
+        alertasSonoras:
+          Boolean(configuracion.alertas_sonoras),
+
+        correosAutomaticos:
+          Boolean(configuracion.correos_automaticos),
+
+        alertasSensoresDesconectados:
+          Boolean(
+            configuracion.alertas_sensores_desconectados
+          ),
+
+        actualizadoEn:
+          configuracion.actualizado_en
+      }
+    });
+  } catch (error) {
+    console.error(
+      "Error al obtener la configuración del sistema:",
+      error.message
+    );
+
+    return res.status(500).json({
+      ok: false,
+      mensaje:
+        "Error al obtener la configuración del sistema",
+      error: error.message
+    });
+  }
+});
+
+// ============================================================
+// PUT /api/v2/configuracion/sistema
+// ============================================================
+router.put("/sistema", async (req, res) => {
+  try {
+    const {
+      nombreEstacionamiento,
+      tiempoMaximoHoras,
+      alertasVisuales,
+      alertasSonoras,
+      correosAutomaticos,
+      alertasSensoresDesconectados
+    } = req.body;
+
+    const nombre = String(
+      nombreEstacionamiento || ""
+    ).trim();
+
+    const tiempoMaximo = Number(
+      tiempoMaximoHoras
+    );
+
+    if (!nombre) {
+      return res.status(400).json({
+        ok: false,
+        mensaje:
+          "El nombre del estacionamiento es obligatorio"
+      });
+    }
+
+    if (nombre.length > 150) {
+      return res.status(400).json({
+        ok: false,
+        mensaje:
+          "El nombre no puede superar los 150 caracteres"
+      });
+    }
+
+    if (
+      !Number.isInteger(tiempoMaximo) ||
+      tiempoMaximo < 1 ||
+      tiempoMaximo > 168
+    ) {
+      return res.status(400).json({
+        ok: false,
+        mensaje:
+          "El tiempo máximo debe estar entre 1 y 168 horas"
+      });
+    }
+
+    const configuracionesBooleanas = [
+      alertasVisuales,
+      alertasSonoras,
+      correosAutomaticos,
+      alertasSensoresDesconectados
+    ];
+
+    if (
+      configuracionesBooleanas.some(
+        (valor) => typeof valor !== "boolean"
+      )
+    ) {
+      return res.status(400).json({
+        ok: false,
+        mensaje:
+          "Las opciones de notificación deben ser verdaderas o falsas"
+      });
+    }
+
+    const [resultado] = await db.query(
+      `
+        UPDATE configuracion_sistema
+        SET
+          nombre_estacionamiento = ?,
+          tiempo_maximo_horas = ?,
+          alertas_visuales = ?,
+          alertas_sonoras = ?,
+          correos_automaticos = ?,
+          alertas_sensores_desconectados = ?
+        WHERE id_configuracion = 1
+      `,
+      [
+        nombre,
+        tiempoMaximo,
+        alertasVisuales,
+        alertasSonoras,
+        correosAutomaticos,
+        alertasSensoresDesconectados
+      ]
+    );
+
+    if (resultado.affectedRows === 0) {
+      return res.status(404).json({
+        ok: false,
+        mensaje:
+          "No existe la configuración del sistema"
+      });
+    }
+
+    return res.json({
+      ok: true,
+      mensaje:
+        "Configuración guardada correctamente"
+    });
+  } catch (error) {
+    console.error(
+      "Error al guardar la configuración:",
+      error.message
+    );
+
+    return res.status(500).json({
+      ok: false,
+      mensaje:
+        "Error al guardar la configuración",
+      error: error.message
+    });
+  }
+});
+
+// ============================================================
+// PUT /api/v2/configuracion/administrador/preferencias
+// ============================================================
+router.put("/administrador/preferencias", async (req, res) => {
+  try {
+    const temaPreferido = String(
+      req.body.temaPreferido || ""
+    ).toLowerCase();
+
+    const colorPrincipal = String(
+      req.body.colorPrincipal || ""
+    ).trim();
+
+    if (!["dark", "light"].includes(temaPreferido)) {
+      return res.status(400).json({
+        ok: false,
+        mensaje:
+          "El tema debe ser dark o light"
+      });
+    }
+
+    if (
+      !/^#[0-9a-fA-F]{6}$/.test(colorPrincipal)
+    ) {
+      return res.status(400).json({
+        ok: false,
+        mensaje:
+          "El color principal debe tener formato hexadecimal"
+      });
+    }
+
+    const [administradores] = await db.query(`
+      SELECT id_admin
+      FROM administradores
+      WHERE estado = 'Activo'
+      ORDER BY id_admin ASC
+      LIMIT 1
+    `);
+
+    if (administradores.length === 0) {
+      return res.status(404).json({
+        ok: false,
+        mensaje:
+          "No existe un administrador activo"
+      });
+    }
+
+    const idAdministrador =
+      administradores[0].id_admin;
+
+    await db.query(
+      `
+        UPDATE administradores
+        SET
+          tema_preferido = ?,
+          color_principal = ?
+        WHERE id_admin = ?
+      `,
+      [
+        temaPreferido,
+        colorPrincipal,
+        idAdministrador
+      ]
+    );
+
+    return res.json({
+      ok: true,
+      mensaje:
+        "Preferencias visuales guardadas correctamente",
+      preferencias: {
+        temaPreferido,
+        colorPrincipal
+      }
+    });
+  } catch (error) {
+    console.error(
+      "Error al guardar las preferencias visuales:",
+      error.message
+    );
+
+    return res.status(500).json({
+      ok: false,
+      mensaje:
+        "Error al guardar las preferencias visuales",
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;

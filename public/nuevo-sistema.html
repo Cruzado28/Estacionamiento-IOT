@@ -966,20 +966,64 @@ tbody tr:hover{background:var(--bg-hover)}
     <div class="page" id="page-settings">
       <div class="section-hd" style="margin-bottom:20px">
         <div><div class="section-title">Configuración del Sistema</div><div class="section-sub">Personaliza la plataforma según tus preferencias</div></div>
-        <button class="btn btn-primary btn-sm" onclick="showToast('success','Configuración guardada','fa-check')"><i class="fa-solid fa-check"></i> Guardar Cambios</button>
+        <button class="btn btn-primary btn-sm" id="config-guardar-btn" onclick="guardarConfiguracionSistema()"><i class="fa-solid fa-check"></i> Guardar Cambios</button>
       </div>
-      <!-- Account -->
-      <div class="config-section">
-        <div class="config-section-title"><i class="fa-solid fa-user"></i>Cuenta de Administrador</div>
-        <div class="form-row">
-          <div class="form-group"><label class="form-label">Nombre completo</label><input class="form-input" value="Admin Central"/></div>
-          <div class="form-group"><label class="form-label">Correo electrónico</label><input class="form-input" value="admin@smartparking.pe" type="email"/></div>
+    <!-- Account -->
+    <div class="config-section">
+      <div class="config-section-title">
+        <i class="fa-solid fa-user"></i>
+        Cuenta de Administrador
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Nombre completo</label>
+          <input
+            class="form-input"
+            id="config-admin-nombre"
+            value=""
+            readonly
+          />
         </div>
-        <div class="form-row">
-          <div class="form-group"><label class="form-label">Contraseña actual</label><input class="form-input" type="password" value="admin123"/></div>
-          <div class="form-group"><label class="form-label">Nueva contraseña</label><input class="form-input" type="password" placeholder="Dejar en blanco para mantener"/></div>
+
+        <div class="form-group">
+          <label class="form-label">Correo electrónico</label>
+          <input
+            class="form-input"
+            id="config-admin-correo"
+            value=""
+            type="email"
+            readonly
+          />
         </div>
       </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Usuario</label>
+          <input
+            class="form-input"
+            id="config-admin-usuario"
+            value=""
+            readonly
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Estado</label>
+          <input
+            class="form-input"
+            id="config-admin-estado"
+            value=""
+            readonly
+          />
+        </div>
+      </div>
+
+      <div style="font-size:11px;color:var(--text-muted)">
+        La contraseña no se muestra por seguridad.
+      </div>
+    </div>  
       <!-- Appearance -->
       <div class="config-section">
         <div class="config-section-title"><i class="fa-solid fa-palette"></i>Apariencia</div>
@@ -1001,21 +1045,125 @@ tbody tr:hover{background:var(--bg-hover)}
       </div>
       <!-- System -->
       <div class="config-section">
-        <div class="config-section-title"><i class="fa-solid fa-building"></i>Sistema</div>
-        <div class="form-row">
-          <div class="form-group"><label class="form-label">Nombre del estacionamiento</label><input class="form-input" value="Estacionamiento Centro Comercial Norte"/></div>
-          <div class="form-group"><label class="form-label">Número de espacios</label><input class="form-input" type="number" value="10"/></div>
+        <div class="config-section-title">
+          <i class="fa-solid fa-building"></i>
+          Sistema
         </div>
-        <div class="form-group"><label class="form-label">Tiempo máximo permitido (horas)</label><input class="form-input" type="number" value="24" style="max-width:200px"/></div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">
+              Nombre del estacionamiento
+            </label>
+
+            <input
+              class="form-input"
+              id="config-sistema-nombre"
+              value=""
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">
+              Número de espacios
+            </label>
+
+            <input
+              class="form-input"
+              id="config-sistema-espacios"
+              type="number"
+              value="0"
+              readonly
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">
+            Tiempo máximo permitido (horas)
+          </label>
+
+          <input
+            class="form-input"
+            id="config-sistema-tiempo"
+            type="number"
+            min="1"
+            max="168"
+            value="24"
+            style="max-width:200px"
+          />
+        </div>
       </div>
       <!-- Notifications -->
       <div class="config-section">
-        <div class="config-section-title"><i class="fa-solid fa-bell"></i>Notificaciones</div>
-        <div class="toggle-row"><div><div class="toggle-label">Alertas visuales</div><div class="toggle-sub">Notificaciones en pantalla</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
-        <div class="toggle-row"><div><div class="toggle-label">Alertas sonoras</div><div class="toggle-sub">Sonido al detectar eventos</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
-        <div class="toggle-row"><div><div class="toggle-label">Correos automáticos</div><div class="toggle-sub">Envío de reportes por correo (simulado)</div></div><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
-        <div class="toggle-row"><div><div class="toggle-label">Alertas de sensores desconectados</div><div class="toggle-sub">Notificar cuando un dispositivo falla</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
-      </div>
+        <div class="config-section-title">
+          <i class="fa-solid fa-bell"></i>
+          Notificaciones
+        </div>
+
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Alertas visuales</div>
+            <div class="toggle-sub">
+              Notificaciones en pantalla
+            </div>
+          </div>
+
+          <div
+            class="toggle"
+            id="config-alertas-visuales"
+            onclick="this.classList.toggle('on')"
+          ></div>
+        </div>
+
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Alertas sonoras</div>
+            <div class="toggle-sub">
+              Sonido al detectar eventos
+            </div>
+          </div>
+
+          <div
+            class="toggle"
+            id="config-alertas-sonoras"
+            onclick="this.classList.toggle('on')"
+          ></div>
+        </div>
+
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Correos automáticos</div>
+            <div class="toggle-sub">
+              Envío automático de reportes por correo
+            </div>
+          </div>
+
+          <div
+            class="toggle"
+            id="config-correos-automaticos"
+            onclick="this.classList.toggle('on')"
+          ></div>
+        </div>
+
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">
+              Alertas de sensores desconectados
+            </div>
+
+            <div class="toggle-sub">
+              Notificar cuando un dispositivo falle
+            </div>
+          </div>
+
+          <div
+            class="toggle"
+            id="config-alertas-sensores"
+            onclick="this.classList.toggle('on')"
+          ></div>
+        </div>
+      </div>      
       <!-- Accessibility -->
       <div class="config-section">
         <div class="config-section-title"><i class="fa-solid fa-universal-access"></i>Accesibilidad</div>
@@ -1250,6 +1398,8 @@ async function init(){
   await cargarDispositivosIoTReales();
   await cargarResumenIoTReal();
   await cargarLogsIoTReales();
+  await cargarAdministradorReal();
+  await cargarConfiguracionSistemaReal();
 
 }
 
@@ -3719,6 +3869,459 @@ function renderIoTLogs() {
       </div>
     `
   ).join("");
+}
+
+// ============================================================
+// CONFIGURACIÓN GENERAL DEL SISTEMA
+// ============================================================
+function actualizarToggleConfiguracion(
+  idElemento,
+  activado
+) {
+  const elemento =
+    document.getElementById(idElemento);
+
+  if (!elemento) {
+    return;
+  }
+
+  elemento.classList.toggle(
+    "on",
+    Boolean(activado)
+  );
+}
+
+function obtenerEstadoToggleConfiguracion(idElemento) {
+  const elemento = document.getElementById(idElemento);
+
+  return elemento
+    ? elemento.classList.contains("on")
+    : false;
+}
+
+
+async function guardarConfiguracionSistema() {
+  const boton =
+    document.getElementById("config-guardar-btn");
+
+  const campoNombre =
+    document.getElementById("config-sistema-nombre");
+
+  const campoTiempo =
+    document.getElementById("config-sistema-tiempo");
+
+  const nombreEstacionamiento =
+    campoNombre?.value.trim() || "";
+
+  const tiempoMaximoHoras =
+    Number(campoTiempo?.value);
+
+  if (!nombreEstacionamiento) {
+    showToast(
+      "error",
+      "Ingresa el nombre del estacionamiento",
+      "fa-triangle-exclamation"
+    );
+    return;
+  }
+
+  if (
+    !Number.isInteger(tiempoMaximoHoras) ||
+    tiempoMaximoHoras < 1 ||
+    tiempoMaximoHoras > 168
+  ) {
+    showToast(
+      "error",
+      "El tiempo máximo debe estar entre 1 y 168 horas",
+      "fa-triangle-exclamation"
+    );
+    return;
+  }
+
+  const configuracion = {
+    nombreEstacionamiento,
+    tiempoMaximoHoras,
+
+    alertasVisuales:
+      obtenerEstadoToggleConfiguracion(
+        "config-alertas-visuales"
+      ),
+
+    alertasSonoras:
+      obtenerEstadoToggleConfiguracion(
+        "config-alertas-sonoras"
+      ),
+
+    correosAutomaticos:
+      obtenerEstadoToggleConfiguracion(
+        "config-correos-automaticos"
+      ),
+
+    alertasSensoresDesconectados:
+      obtenerEstadoToggleConfiguracion(
+        "config-alertas-sensores"
+      )
+  };
+
+  const preferencias = {
+    temaPreferido:
+      document.documentElement.getAttribute(
+        "data-theme"
+      ) === "light"
+        ? "light"
+        : "dark",
+
+    colorPrincipal:
+      getComputedStyle(
+        document.documentElement
+      )
+        .getPropertyValue("--accent")
+        .trim() || "#4f8ef7"
+  };
+
+  try {
+    if (boton) {
+      boton.disabled = true;
+      boton.innerHTML =
+        '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
+    }
+
+    const [
+      respuestaConfiguracion,
+      respuestaPreferencias
+    ] = await Promise.all([
+      fetch(
+        "/api/v2/configuracion/sistema",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(configuracion)
+        }
+      ),
+
+      fetch(
+        "/api/v2/configuracion/administrador/preferencias",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(preferencias)
+        }
+      )
+    ]);
+
+    const [
+      datosConfiguracion,
+      datosPreferencias
+    ] = await Promise.all([
+      respuestaConfiguracion.json(),
+      respuestaPreferencias.json()
+    ]);
+
+    if (
+      !respuestaConfiguracion.ok ||
+      !datosConfiguracion.ok
+    ) {
+      throw new Error(
+        datosConfiguracion.mensaje ||
+        "No se pudo guardar la configuración"
+      );
+    }
+
+    if (
+      !respuestaPreferencias.ok ||
+      !datosPreferencias.ok
+    ) {
+      throw new Error(
+        datosPreferencias.mensaje ||
+        "No se pudieron guardar las preferencias visuales"
+      );
+    }
+
+    await Promise.all([
+      cargarConfiguracionSistemaReal(),
+      cargarAdministradorReal()
+    ]);
+
+    showToast(
+      "success",
+      "Configuración guardada correctamente",
+      "fa-check"
+    );
+  } catch (error) {
+    console.error(
+      "Error al guardar la configuración:",
+      error
+    );
+
+    showToast(
+      "error",
+      error.message ||
+      "No se pudo guardar la configuración",
+      "fa-triangle-exclamation"
+    );
+  } finally {
+    if (boton) {
+      boton.disabled = false;
+      boton.innerHTML =
+        '<i class="fa-solid fa-check"></i> Guardar Cambios';
+    }
+  }
+}
+
+async function cargarConfiguracionSistemaReal() {
+  try {
+    const respuesta = await fetch(
+      "/api/v2/configuracion/sistema"
+    );
+
+    if (!respuesta.ok) {
+      throw new Error(
+        "No se pudo obtener la configuración"
+      );
+    }
+
+    const datos = await respuesta.json();
+
+    if (!datos.ok || !datos.configuracion) {
+      throw new Error(
+        datos.mensaje ||
+        "La configuración recibida no es válida"
+      );
+    }
+
+    const configuracion = datos.configuracion;
+
+    const campoNombre =
+      document.getElementById(
+        "config-sistema-nombre"
+      );
+
+    const campoEspacios =
+      document.getElementById(
+        "config-sistema-espacios"
+      );
+
+    const campoTiempo =
+      document.getElementById(
+        "config-sistema-tiempo"
+      );
+
+    if (campoNombre) {
+      campoNombre.value =
+        configuracion.nombreEstacionamiento || "";
+    }
+
+    if (campoEspacios) {
+      campoEspacios.value =
+        Number(configuracion.numeroEspacios) || 0;
+    }
+
+    if (campoTiempo) {
+      campoTiempo.value =
+        Number(configuracion.tiempoMaximoHoras) || 24;
+    }
+
+    actualizarToggleConfiguracion(
+      "config-alertas-visuales",
+      configuracion.alertasVisuales
+    );
+
+    actualizarToggleConfiguracion(
+      "config-alertas-sonoras",
+      configuracion.alertasSonoras
+    );
+
+    actualizarToggleConfiguracion(
+      "config-correos-automaticos",
+      configuracion.correosAutomaticos
+    );
+
+    actualizarToggleConfiguracion(
+      "config-alertas-sensores",
+      configuracion.alertasSensoresDesconectados
+    );
+
+    console.log(
+      "Configuración del sistema actualizada",
+      configuracion
+    );
+  } catch (error) {
+    console.error(
+      "Error al cargar la configuración:",
+      error
+    );
+
+    showToast(
+      "error",
+      "No se pudo cargar la configuración",
+      "fa-triangle-exclamation"
+    );
+  }
+}
+
+// ============================================================
+// CONFIGURACIÓN DEL ADMINISTRADOR
+// ============================================================
+function obtenerColorHoverConfiguracion(color) {
+  const colores = {
+    "#4f8ef7": "#6ba0ff",
+    "#22c55e": "#4ade80",
+    "#a78bfa": "#c4b5fd",
+    "#f59e0b": "#fbbf24",
+    "#ef4444": "#f87171",
+    "#14b8a6": "#2dd4bf"
+  };
+
+  return colores[color.toLowerCase()] || color;
+}
+
+
+function aplicarPreferenciasVisuales(
+  temaPreferido,
+  colorPrincipal
+) {
+  const tema =
+    temaPreferido === "light"
+      ? "light"
+      : "dark";
+
+  const color =
+    colorPrincipal || "#4f8ef7";
+
+  document.documentElement.setAttribute(
+    "data-theme",
+    tema
+  );
+
+  document.documentElement.style.setProperty(
+    "--accent",
+    color
+  );
+
+  document.documentElement.style.setProperty(
+    "--accent-hover",
+    obtenerColorHoverConfiguracion(color)
+  );
+
+  document.querySelectorAll(".color-opt").forEach(
+    (elemento) => {
+      const accion =
+        elemento.getAttribute("onclick") || "";
+
+      elemento.classList.toggle(
+        "active",
+        accion.includes(color)
+      );
+    }
+  );
+
+  updateThemeUI();
+
+  if (charts.hourly) {
+    reinitCharts();
+  }
+}
+
+async function cargarAdministradorReal() {
+  try {
+    const respuesta = await fetch(
+      "/api/v2/configuracion/administrador"
+    );
+
+    if (!respuesta.ok) {
+      throw new Error(
+        "No se pudo obtener el administrador"
+      );
+    }
+
+    const datos = await respuesta.json();
+
+    if (!datos.ok || !datos.administrador) {
+      throw new Error(
+        datos.mensaje ||
+        "La respuesta del administrador no es válida"
+      );
+    }
+
+    const administrador = datos.administrador;
+
+    aplicarPreferenciasVisuales(
+      administrador.temaPreferido,
+      administrador.colorPrincipal
+    );
+
+    const campoNombre =
+      document.getElementById("config-admin-nombre");
+
+    const campoCorreo =
+      document.getElementById("config-admin-correo");
+
+    const campoUsuario =
+      document.getElementById("config-admin-usuario");
+
+    const campoEstado =
+      document.getElementById("config-admin-estado");
+
+    if (campoNombre) {
+      campoNombre.value = administrador.nombre || "";
+    }
+
+    if (campoCorreo) {
+      campoCorreo.value = administrador.correo || "";
+    }
+
+    if (campoUsuario) {
+      campoUsuario.value = administrador.usuario || "";
+    }
+
+    if (campoEstado) {
+      campoEstado.value = administrador.estado || "";
+    }
+
+    const nombresSidebar =
+      document.querySelectorAll(".sidebar-user-info .name");
+
+    nombresSidebar.forEach((elemento) => {
+      elemento.textContent =
+        administrador.nombre || "Administrador";
+    });
+
+    const avatares =
+      document.querySelectorAll(".user-avatar");
+
+    const iniciales = String(
+      administrador.nombre || "AD"
+    )
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((palabra) => palabra.charAt(0).toUpperCase())
+      .join("");
+
+    avatares.forEach((avatar) => {
+      avatar.textContent = iniciales || "AD";
+    });
+
+    console.log(
+      "Administrador actualizado con datos reales",
+      administrador
+    );
+  } catch (error) {
+    console.error(
+      "Error al cargar el administrador:",
+      error
+    );
+
+    showToast(
+      "error",
+      "No se pudo cargar el administrador",
+      "fa-triangle-exclamation"
+    );
+  }
 }
 
 // ============================================================
