@@ -1100,4 +1100,164 @@ router.get("/exportar/pdf", async (req, res) => {
   }
 });
 
+// ============================================================
+// GET /api/v2/historial/graficos
+// ============================================================
+router.get("/graficos", async (req, res) => {
+  try {
+    const [
+      [ocupacionHistorica],
+      [ingresosSemanales]
+    ] = await Promise.all([
+      // Promedio de ocupación por día durante los últimos 7 días.
+      db.query(`
+        WITH RECURSIVE fechas AS (
+          SELECT
+            CURDATE() - INTERVAL 6 DAY AS fecha
+
+          UNION ALL
+
+          SELECT fecha + INTERVAL 1 DAY
+          FROM fechas
+          WHERE fecha < CURDATE()
+        ),
+
+        horas AS (
+          SELECT 6 AS hora
+
+          UNION ALL
+
+          SELECT hora + 1
+          FROM horas
+          WHERE hora < 21
+        ),
+
+        ocupacion_horaria AS (
+          SELECT
+            f.fecha,
+            h.hora,
+            COUNT(s.id_sesion) AS espacios_ocupados
+
+          FROM fechas f
+
+          CROSS JOIN horas h
+
+          LEFT JOIN sesiones_parqueo s
+            ON s.fecha_hora_ingreso <
+              TIMESTAMP(
+                f.fecha,
+                MAKETIME(h.hora + 1, 0, 0)
+              )
+
+            AND COALESCE(
+              s.fecha_hora_salida,
+              NOW()
+            ) >= TIMESTAMP(
+              f.fecha,
+              MAKETIME(h.hora, 0, 0)
+            )
+
+          GROUP BY
+            f.fecha,
+            h.hora
+        )
+
+        SELECT
+          DATE_FORMAT(
+            fecha,
+            '%d/%m'
+          ) AS etiqueta,
+
+          COALESCE(
+            ROUND(
+              AVG(espacios_ocupados) /
+              NULLIF(
+                (
+                  SELECT COUNT(*)
+                  FROM espacios
+                ),
+                0
+              ) * 100,
+              2
+            ),
+            0
+          ) AS porcentaje
+
+        FROM ocupacion_horaria
+
+        GROUP BY fecha
+
+        ORDER BY fecha ASC
+      `),
+
+      // Ingresos reales de los últimos 7 días.
+      db.query(`
+        WITH RECURSIVE fechas AS (
+          SELECT
+            CURDATE() - INTERVAL 6 DAY AS fecha
+
+          UNION ALL
+
+          SELECT fecha + INTERVAL 1 DAY
+          FROM fechas
+          WHERE fecha < CURDATE()
+        )
+
+        SELECT
+          DATE_FORMAT(
+            f.fecha,
+            '%d/%m'
+          ) AS etiqueta,
+
+          COALESCE(
+            SUM(p.monto),
+            0
+          ) AS total
+
+        FROM fechas f
+
+        LEFT JOIN pagos p
+          ON DATE(p.fecha_pago) = f.fecha
+          AND p.estado = 'Completado'
+
+        GROUP BY f.fecha
+
+        ORDER BY f.fecha ASC
+      `)
+    ]);
+
+    return res.json({
+      ok: true,
+
+      graficos: {
+        ocupacionHistorica:
+          ocupacionHistorica.map((registro) => ({
+            etiqueta: registro.etiqueta,
+            porcentaje: Number(
+              registro.porcentaje
+            )
+          })),
+
+        ingresosSemanales:
+          ingresosSemanales.map((registro) => ({
+            etiqueta: registro.etiqueta,
+            total: Number(registro.total)
+          }))
+      }
+    });
+  } catch (error) {
+    console.error(
+      "Error al obtener los gráficos del historial:",
+      error.message
+    );
+
+    return res.status(500).json({
+      ok: false,
+      mensaje:
+        "Error al obtener los gráficos del historial",
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;

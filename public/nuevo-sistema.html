@@ -2321,7 +2321,10 @@ function reinitCharts() {
   setTimeout(async () => {
     initCharts();
 
-    await cargarGraficosDashboardReal();
+    await Promise.all([
+      cargarGraficosDashboardReal(),
+      cargarGraficosHistorialReal()
+    ]);
   }, 50);
 }
 
@@ -3865,6 +3868,77 @@ function limpiarFiltrosHistorial() {
   );
 }
 
+async function cargarGraficosHistorialReal() {
+  try {
+    const respuesta = await fetch(
+      "/api/v2/historial/graficos"
+    );
+
+    if (!respuesta.ok) {
+      throw new Error(
+        "No se pudieron obtener los gráficos del historial"
+      );
+    }
+
+    const datos = await respuesta.json();
+
+    if (!datos.ok || !datos.graficos) {
+      throw new Error(
+        datos.mensaje ||
+        "La respuesta de gráficos no es válida"
+      );
+    }
+
+    const graficos = datos.graficos;
+
+    // Ocupación histórica de los últimos siete días.
+    if (charts.histOcc) {
+      charts.histOcc.data.labels =
+        graficos.ocupacionHistorica.map(
+          (registro) => registro.etiqueta
+        );
+
+      charts.histOcc.data.datasets[0].data =
+        graficos.ocupacionHistorica.map(
+          (registro) =>
+            Number(registro.porcentaje)
+        );
+
+      charts.histOcc.update();
+    }
+
+    // Ingresos reales de los últimos siete días.
+    if (charts.histInc) {
+      charts.histInc.data.labels =
+        graficos.ingresosSemanales.map(
+          (registro) => registro.etiqueta
+        );
+
+      charts.histInc.data.datasets[0].data =
+        graficos.ingresosSemanales.map(
+          (registro) => Number(registro.total)
+        );
+
+      charts.histInc.update();
+    }
+
+    console.log(
+      "Gráficos del historial actualizados con datos reales",
+      graficos
+    );
+  } catch (error) {
+    console.error(
+      "Error al cargar los gráficos del historial:",
+      error
+    );
+
+    showToast(
+      "error",
+      "No se pudieron cargar los gráficos del historial",
+      "fa-chart-line"
+    );
+  }
+}
 
 async function cargarHistorialReal() {
   try {
@@ -3988,6 +4062,8 @@ async function cargarHistorialReal() {
     );
 
     renderHistoryTable();
+
+    await cargarGraficosHistorialReal();
 
     console.log(
       "Historial actualizado con datos reales",
