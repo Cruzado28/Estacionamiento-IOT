@@ -888,4 +888,148 @@ router.get("/graficos", async (req, res) => {
   }
 });
 
+// ============================================================
+// GET /api/v2/dashboard/rankings
+// ============================================================
+router.get("/rankings", async (req, res) => {
+  try {
+    const [
+      [establecimientos],
+      [promociones]
+    ] = await Promise.all([
+      // Establecimientos con más actividades registradas.
+      db.query(`
+        SELECT
+          e.id_establecimiento AS idEstablecimiento,
+          e.nombre,
+          COUNT(a.id_actividad) AS totalActividades,
+          COUNT(
+            DISTINCT a.sesion_id
+          ) AS totalVisitas,
+          COALESCE(
+            SUM(a.monto_consumo),
+            0
+          ) AS consumoTotal
+
+        FROM establecimientos e
+
+        LEFT JOIN actividades a
+          ON a.establecimiento_id =
+            e.id_establecimiento
+          AND a.estado = 'Registrada'
+
+        WHERE e.estado = 'Activo'
+
+        GROUP BY
+          e.id_establecimiento,
+          e.nombre
+
+        HAVING COUNT(a.id_actividad) > 0
+
+        ORDER BY
+          totalVisitas DESC,
+          consumoTotal DESC,
+          e.nombre ASC
+
+        LIMIT 5
+      `),
+
+      // Promociones realmente aplicadas a sesiones.
+      db.query(`
+        SELECT
+          p.id_promocion AS idPromocion,
+          p.nombre,
+          COUNT(
+            pa.id_promocion_aplicada
+          ) AS totalUsos,
+          COALESCE(
+            SUM(pa.monto_descontado),
+            0
+          ) AS descuentoTotal
+
+        FROM promociones p
+
+        LEFT JOIN promociones_aplicadas pa
+          ON pa.promocion_id = p.id_promocion
+          AND pa.estado = 'Aplicada'
+
+        GROUP BY
+          p.id_promocion,
+          p.nombre
+
+        HAVING COUNT(
+          pa.id_promocion_aplicada
+        ) > 0
+
+        ORDER BY
+          totalUsos DESC,
+          descuentoTotal DESC,
+          p.nombre ASC
+
+        LIMIT 5
+      `)
+    ]);
+
+    return res.json({
+      ok: true,
+
+      rankings: {
+        establecimientos:
+          establecimientos.map(
+            (establecimiento) => ({
+              idEstablecimiento:
+                establecimiento.idEstablecimiento,
+
+              nombre:
+                establecimiento.nombre,
+
+              totalActividades: Number(
+                establecimiento.totalActividades
+              ),
+
+              totalVisitas: Number(
+                establecimiento.totalVisitas
+              ),
+
+              consumoTotal: Number(
+                establecimiento.consumoTotal
+              )
+            })
+          ),
+
+        promociones:
+          promociones.map(
+            (promocion) => ({
+              idPromocion:
+                promocion.idPromocion,
+
+              nombre:
+                promocion.nombre,
+
+              totalUsos: Number(
+                promocion.totalUsos
+              ),
+
+              descuentoTotal: Number(
+                promocion.descuentoTotal
+              )
+            })
+          )
+      }
+    });
+  } catch (error) {
+    console.error(
+      "Error al obtener los rankings:",
+      error.message
+    );
+
+    return res.status(500).json({
+      ok: false,
+      mensaje:
+        "Error al obtener los rankings del Dashboard",
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;

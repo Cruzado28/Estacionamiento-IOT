@@ -1819,8 +1819,11 @@ async function cargarDashboardReal() {
 
     // Volver a dibujar el gemelo digital.
     renderParkingMap();
-    
-    await cargarGraficosDashboardReal();
+
+    await Promise.all([
+      cargarGraficosDashboardReal(),
+      cargarRankingsReales()
+    ]);
 
     const contadorMonitor =
       document.getElementById("v-feed-count");
@@ -2656,16 +2659,158 @@ async function cargarEventosReales() {
 // ============================================================
 // RANKINGS
 // ============================================================
-function renderRankings(){
-  const stores=['Plaza Vea','McDonald\'s','Ripley','Cinemark','Starbucks'];
-  const vals=['2,840','1,920','1,640','1,310','980'];
-  const storesEl=document.getElementById('ranking-stores');
-  if(storesEl)storesEl.innerHTML=stores.map((s,i)=>`<div class="ranking-item"><div class="ranking-num">${i+1}</div><div class="ranking-info"><div style="font-weight:500;font-size:12px">${s}</div></div><div class="ranking-val">S/ ${vals[i]}</div></div>`).join('');
+function renderRankings(
+  establecimientos = [],
+  promociones = []
+) {
+  const storesEl =
+    document.getElementById("ranking-stores");
 
-  const promos=['Consumo >S/50','Consumo >S/100','Consumo >S/200'];
-  const pvs=['38 usos','24 usos','9 usos'];
-  const promosEl=document.getElementById('ranking-promos');
-  if(promosEl)promosEl.innerHTML=promos.map((p,i)=>`<div class="ranking-item"><div class="ranking-num">${i+1}</div><div class="ranking-info" style="font-size:12px">${p}</div><div class="ranking-val" style="color:var(--amber)">${pvs[i]}</div></div>`).join('');
+  const promosEl =
+    document.getElementById("ranking-promos");
+
+  if (storesEl) {
+    if (establecimientos.length === 0) {
+      storesEl.innerHTML = `
+        <div style="
+          padding:14px 6px;
+          text-align:center;
+          color:var(--text-muted);
+          font-size:11px;
+        ">
+          No existen visitas registradas.
+        </div>
+      `;
+    } else {
+      storesEl.innerHTML =
+        establecimientos.map(
+          (establecimiento, indice) => `
+            <div class="ranking-item">
+              <div class="ranking-num">
+                ${indice + 1}
+              </div>
+
+              <div class="ranking-info">
+                <div style="
+                  font-weight:500;
+                  font-size:12px;
+                ">
+                  ${escaparHtmlEvento(
+                    establecimiento.nombre
+                  )}
+                </div>
+
+                <div style="
+                  color:var(--text-muted);
+                  font-size:10px;
+                ">
+                  ${establecimiento.totalVisitas}
+                  visita${
+                    establecimiento.totalVisitas === 1
+                      ? ""
+                      : "s"
+                  }
+                </div>
+              </div>
+
+              <div class="ranking-val">
+                S/ ${Number(
+                  establecimiento.consumoTotal
+                ).toFixed(2)}
+              </div>
+            </div>
+          `
+        ).join("");
+    }
+  }
+
+  if (promosEl) {
+    if (promociones.length === 0) {
+      promosEl.innerHTML = `
+        <div style="
+          padding:14px 6px;
+          text-align:center;
+          color:var(--text-muted);
+          font-size:11px;
+        ">
+          No existen promociones aplicadas.
+        </div>
+      `;
+    } else {
+      promosEl.innerHTML =
+        promociones.map(
+          (promocion, indice) => `
+            <div class="ranking-item">
+              <div class="ranking-num">
+                ${indice + 1}
+              </div>
+
+              <div
+                class="ranking-info"
+                style="font-size:12px"
+              >
+                ${escaparHtmlEvento(
+                  promocion.nombre
+                )}
+              </div>
+
+              <div
+                class="ranking-val"
+                style="color:var(--amber)"
+              >
+                ${promocion.totalUsos}
+                uso${
+                  promocion.totalUsos === 1
+                    ? ""
+                    : "s"
+                }
+              </div>
+            </div>
+          `
+        ).join("");
+    }
+  }
+}
+
+
+async function cargarRankingsReales() {
+  try {
+    const respuesta = await fetch(
+      "/api/v2/dashboard/rankings"
+    );
+
+    if (!respuesta.ok) {
+      throw new Error(
+        "No se pudieron obtener los rankings"
+      );
+    }
+
+    const datos = await respuesta.json();
+
+    if (!datos.ok || !datos.rankings) {
+      throw new Error(
+        datos.mensaje ||
+        "La respuesta de rankings no es válida"
+      );
+    }
+
+    renderRankings(
+      datos.rankings.establecimientos || [],
+      datos.rankings.promociones || []
+    );
+
+    console.log(
+      "Rankings actualizados con datos reales",
+      datos.rankings
+    );
+  } catch (error) {
+    console.error(
+      "Error al cargar los rankings reales:",
+      error
+    );
+
+    renderRankings([], []);
+  }
 }
 
 // ============================================================
@@ -5900,19 +6045,6 @@ function showToast(type,msg,icon='fa-circle-info'){
   setTimeout(()=>{t.style.opacity='0';t.style.transform='translateX(20px)';t.style.transition='all 0.2s ease';setTimeout(()=>t.remove(),200);},3500);
 }
 
-// ============================================================
-// REAL-TIME SIMULATION
-// ============================================================
-setInterval(()=>{
-  const events=[
-    {type:'info',msg:'RFID detectado: TAG-'+Math.floor(Math.random()*9999),icon:'fa-satellite-dish'},
-    {type:'success',msg:'Vehículo ingresó: '+['ABC','XYZ','LMN','DEF'][Math.floor(Math.random()*4)]+'-'+Math.floor(Math.random()*900+100),icon:'fa-right-to-bracket'},
-    {type:'success',msg:'Sincronización completada · '+IOT_DEVICES[Math.floor(Math.random()*IOT_DEVICES.length)].name,icon:'fa-rotate'},
-  ];
-  const e=events[Math.floor(Math.random()*events.length)];
-  // Only show occasional auto-toasts (20% chance)
-  if(Math.random()<0.2)showToast(e.type,e.msg,e.icon);
-},8000);
 </script>
 </div><!-- /app -->
 </body>
