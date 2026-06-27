@@ -600,103 +600,212 @@ tbody tr:hover{background:var(--bg-hover)}
       </div>
       <div class="vehicle-panel">
         <!-- Camera feed -->
-        <div class="camera-feed">
-        <div class="camera-top">
-          <span class="cam-rec" id="monitor-camera-rec">
-            <span class="dot"></span>
-            SIN SEÑAL
+      <div class="camera-feed">
+      <div class="camera-top">
+        <span class="cam-rec" id="monitor-camera-rec">
+          <span class="dot"></span>
+          SIN SEÑAL
+        </span>
+
+        <div
+          id="monitor-camera-name"
+          style="font-size:13px;font-weight:600"
+        >
+          Cámara de entrada
+        </div>
+
+        <div
+          style="
+            margin-left:auto;
+            display:flex;
+            gap:8px;
+            align-items:center;
+          "
+        >
+          <span
+            class="badge badge-gray"
+            id="monitor-camera-status"
+          >
+            Sin conexión
           </span>
 
-          <div
-            id="monitor-camera-name"
-            style="font-size:13px;font-weight:600"
+          <span
+            id="monitor-camera-address"
+            style="
+              font-size:11px;
+              color:var(--text-muted);
+            "
           >
-            Cámara de entrada
+            Sin dirección
+          </span>
+        </div>
+      </div>
+
+      <div
+        class="camera-live"
+        id="monitor-camera-view"
+      >
+        <div
+          style="
+            min-height:360px;
+            width:100%;
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            justify-content:center;
+            text-align:center;
+            color:var(--text-muted);
+            background:#05070c;
+          "
+        >
+          <i
+            class="fa-solid fa-video-slash"
+            style="
+              font-size:42px;
+              margin-bottom:14px;
+              opacity:0.55;
+            "
+          ></i>
+
+          <div
+            style="
+              font-size:14px;
+              font-weight:600;
+              color:var(--text-secondary);
+            "
+          >
+            Transmisión no disponible
           </div>
 
           <div
             style="
-              margin-left:auto;
-              display:flex;
-              gap:8px;
-              align-items:center;
+              font-size:11px;
+              margin-top:5px;
             "
           >
-            <span
-              class="badge badge-gray"
-              id="monitor-camera-status"
-            >
-              Sin conexión
-            </span>
+            Esperando conexión con la ESP32-CAM
+          </div>
+        </div>
+      </div>
 
-            <span
-              id="monitor-camera-address"
-              style="
-                font-size:11px;
-                color:var(--text-muted);
-              "
-            >
-              Sin dirección
-            </span>
+      <div
+        style="
+          padding:12px 16px;
+          border-top:1px solid var(--border);
+          display:flex;
+          gap:10px;
+          flex-wrap:wrap;
+        "
+      >
+        <div style="flex:1;min-width:120px">
+          <div
+            style="
+              font-size:10px;
+              color:var(--text-muted);
+              font-weight:600;
+              text-transform:uppercase;
+              letter-spacing:0.05em;
+              margin-bottom:2px;
+            "
+          >
+            Vehículos activos
+          </div>
+
+          <div
+            id="monitor-detected-count"
+            style="
+              font-size:16px;
+              font-weight:700;
+              color:var(--accent);
+            "
+          >
+            0 activos
           </div>
         </div>
 
-                  <div class="camera-live">
-            <div class="cam-overlay">
-              <svg width="280" height="180" viewBox="0 0 280 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect width="280" height="180" fill="#0a0f1e"/>
-                <rect x="10" y="10" width="260" height="160" rx="4" fill="none" stroke="rgba(79,142,247,0.3)" stroke-width="1" stroke-dasharray="6 4"/>
-                <!-- Road -->
-                <rect x="0" y="90" width="280" height="90" fill="#161b27"/>
-                <rect x="0" y="88" width="280" height="4" fill="#1e2535"/>
-                <!-- Lane markings -->
-                <rect x="60" y="110" width="30" height="5" rx="1" fill="rgba(255,255,200,0.3)"/>
-                <rect x="130" y="110" width="30" height="5" rx="1" fill="rgba(255,255,200,0.3)"/>
-                <rect x="200" y="110" width="30" height="5" rx="1" fill="rgba(255,255,200,0.3)"/>
-                <!-- Car 1 -->
-                <rect x="50" y="120" width="50" height="30" rx="5" fill="#1d4ed8"/>
-                <rect x="56" y="124" width="38" height="16" rx="3" fill="rgba(255,255,255,0.15)"/>
-                <rect x="46" y="144" width="10" height="8" rx="2" fill="#374151"/>
-                <rect x="104" y="144" width="10" height="8" rx="2" fill="#374151"/>
-                <!-- Car 2 -->
-                <rect x="160" y="125" width="50" height="28" rx="5" fill="#7c3aed"/>
-                <rect x="166" y="129" width="38" height="14" rx="3" fill="rgba(255,255,255,0.15)"/>
-                <rect x="156" y="147" width="10" height="8" rx="2" fill="#374151"/>
-                <rect x="214" y="147" width="10" height="8" rx="2" fill="#374151"/>
-                <!-- Sensor beam -->
-                <line x1="0" y1="88" x2="280" y2="88" stroke="rgba(79,142,247,0.4)" stroke-width="2"/>
-                <!-- Crosshairs on car 1 -->
-                <rect x="48" y="118" width="54" height="34" rx="3" fill="none" stroke="rgba(34,197,94,0.8)" stroke-width="1.5" stroke-dasharray="3 2"/>
-                <text x="50" y="116" font-size="9" fill="rgba(34,197,94,0.9)" font-family="monospace">ABC-123 ✓</text>
-                <!-- Crosshairs on car 2 -->
-                <rect x="158" y="123" width="54" height="32" rx="3" fill="none" stroke="rgba(245,158,11,0.8)" stroke-width="1.5" stroke-dasharray="3 2"/>
-                <text x="160" y="121" font-size="9" fill="rgba(245,158,11,0.9)" font-family="monospace">XYZ-789</text>
-                <!-- HUD -->
-                <text x="14" y="26" font-size="9" fill="rgba(79,142,247,0.7)" font-family="monospace">CAM-01 · 1080p · 30fps</text>
-                <text x="14" y="38" font-size="9" fill="rgba(255,255,255,0.4)" font-family="monospace">2025-06-18 · 14:37:22</text>
-                <text x="180" y="26" font-size="9" fill="rgba(34,197,94,0.8)" font-family="monospace">DETECTADOS: 2</text>
-                <!-- Corner markers -->
-                <path d="M10 40 L10 10 L40 10" stroke="rgba(79,142,247,0.6)" stroke-width="1.5" fill="none"/>
-                <path d="M270 40 L270 10 L240 10" stroke="rgba(79,142,247,0.6)" stroke-width="1.5" fill="none"/>
-                <path d="M10 140 L10 170 L40 170" stroke="rgba(79,142,247,0.6)" stroke-width="1.5" fill="none"/>
-                <path d="M270 140 L270 170 L240 170" stroke="rgba(79,142,247,0.6)" stroke-width="1.5" fill="none"/>
-              </svg>
-            </div>
+        <div style="flex:1;min-width:120px">
+          <div
+            style="
+              font-size:10px;
+              color:var(--text-muted);
+              font-weight:600;
+              text-transform:uppercase;
+              letter-spacing:0.05em;
+              margin-bottom:2px;
+            "
+          >
+            Latencia
           </div>
-          <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:10px;flex-wrap:wrap">
-            <div style="flex:1;min-width:120px"><div style="font-size:10px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px">Vehículos detectados</div><div style="font-size:16px;font-weight:700;color:var(--accent)">2 activos</div></div>
-            <div style="flex:1;min-width:120px"><div style="font-size:10px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px">Latencia</div><div style="font-size:16px;font-weight:700;color:var(--green)">12ms</div></div>
-            <div style="flex:1;min-width:120px"><div style="font-size:10px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px">FPS</div><div style="font-size:16px;font-weight:700">30</div></div>
-            <div style="flex:1;min-width:120px"><div style="font-size:10px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px">Resolución</div><div style="font-size:16px;font-weight:700">1080p</div></div>
+
+          <div
+            id="monitor-camera-latency"
+            style="
+              font-size:16px;
+              font-weight:700;
+            "
+          >
+            —
           </div>
-        </div>  
         </div>
+
+        <div style="flex:1;min-width:120px">
+          <div
+            style="
+              font-size:10px;
+              color:var(--text-muted);
+              font-weight:600;
+              text-transform:uppercase;
+              letter-spacing:0.05em;
+              margin-bottom:2px;
+            "
+          >
+            Última lectura
+          </div>
+
+          <div
+            id="monitor-camera-last"
+            style="
+              font-size:16px;
+              font-weight:700;
+            "
+          >
+            Sin registro
+          </div>
+        </div>
+
+        <div style="flex:1;min-width:120px">
+          <div
+            style="
+              font-size:10px;
+              color:var(--text-muted);
+              font-weight:600;
+              text-transform:uppercase;
+              letter-spacing:0.05em;
+              margin-bottom:2px;
+            "
+          >
+            Estado del dispositivo
+          </div>
+
+          <div
+            id="monitor-camera-device-state"
+            style="
+              font-size:16px;
+              font-weight:700;
+            "
+          >
+            Sin conexión
+          </div>
+        </div>
+      </div>
+
+    </div>
 
         <!-- Vehicles list -->
         <div class="vehicles-list">
           <div class="v-list-hd">
             <div style="font-size:13px;font-weight:600">Vehículos en Estacionamiento</div>
-            <div style="font-size:11px;color:var(--text-muted);margin-top:2px" id="v-feed-count">8 activos · actualizado ahora</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px" id="v-feed-count">0 activos · actualizado ahora</div>
           </div>
           <div style="background:var(--bg-card);border:1px solid var(--border);border-top:none;padding:10px 12px">
             <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:8px">Espacios · Vista rápida</div>
@@ -2918,6 +3027,18 @@ function renderVehiclesFeed() {
     (vehiculo) => vehiculo.inside
   );
 
+    const contadorMonitor =
+    document.getElementById(
+      "monitor-detected-count"
+    );
+
+  if (contadorMonitor) {
+    contadorMonitor.textContent =
+      `${activos.length} activo${
+        activos.length === 1 ? "" : "s"
+      }`;
+  }
+
   if (activos.length === 0) {
     feed.innerHTML = `
       <div style="
@@ -4641,6 +4762,129 @@ function formatearFechaIoT(fecha) {
   return `${fechaPartes[2]}/${fechaPartes[1]}/${fechaPartes[0]} ${partes[1]}`;
 }
 
+function actualizarMonitorCamaraReal() {
+  const camara = IOT_DEVICES.find(
+    (dispositivo) =>
+      dispositivo.tipo === "ESP32-CAM"
+  );
+
+  const nombre =
+    document.getElementById("monitor-camera-name");
+
+  const estado =
+    document.getElementById("monitor-camera-status");
+
+  const direccion =
+    document.getElementById("monitor-camera-address");
+
+  const latencia =
+    document.getElementById("monitor-camera-latency");
+
+  const ultimaLectura =
+    document.getElementById("monitor-camera-last");
+
+  const estadoDispositivo =
+    document.getElementById(
+      "monitor-camera-device-state"
+    );
+
+  const indicador =
+    document.getElementById("monitor-camera-rec");
+
+  const activos = vehiclesData.filter(
+    (vehiculo) => vehiculo.inside
+  ).length;
+
+  const contador =
+    document.getElementById(
+      "monitor-detected-count"
+    );
+
+  if (contador) {
+    contador.textContent =
+      `${activos} activo${activos === 1 ? "" : "s"}`;
+  }
+
+  if (!camara) {
+    if (nombre) {
+      nombre.textContent = "Cámara no registrada";
+    }
+
+    if (estado) {
+      estado.textContent = "Sin conexión";
+      estado.className = "badge badge-gray";
+    }
+
+    if (direccion) {
+      direccion.textContent = "Sin dirección";
+    }
+
+    if (latencia) {
+      latencia.textContent = "—";
+    }
+
+    if (ultimaLectura) {
+      ultimaLectura.textContent = "Sin registro";
+    }
+
+    if (estadoDispositivo) {
+      estadoDispositivo.textContent =
+        "No registrada";
+    }
+
+    return;
+  }
+
+  const estaOnline =
+    camara.status === "online";
+
+  if (nombre) {
+    nombre.textContent = camara.name;
+  }
+
+  if (estado) {
+    estado.textContent =
+      estaOnline ? "Online" : camara.status;
+
+    estado.className =
+      estaOnline
+        ? "badge badge-green"
+        : "badge badge-red";
+  }
+
+  if (direccion) {
+    direccion.textContent = camara.ip;
+  }
+
+  if (latencia) {
+    latencia.textContent =
+      camara.latency > 0
+        ? `${camara.latency} ms`
+        : "Sin dato";
+  }
+
+  if (ultimaLectura) {
+    ultimaLectura.textContent =
+      camara.last || "Sin registro";
+  }
+
+  if (estadoDispositivo) {
+    estadoDispositivo.textContent =
+      estaOnline ? "Operativo" : camara.status;
+
+    estadoDispositivo.style.color =
+      estaOnline
+        ? "var(--green)"
+        : "var(--red)";
+  }
+
+  if (indicador) {
+    indicador.innerHTML = `
+      <span class="dot"></span>
+      ${estaOnline ? "CONECTADA" : "SIN SEÑAL"}
+    `;
+  }
+}
 
 async function cargarDispositivosIoTReales() {
   try {
@@ -4720,6 +4964,8 @@ async function cargarDispositivosIoTReales() {
     );
 
     renderIoTDevices();
+
+    actualizarMonitorCamaraReal();
 
     console.log(
       "Dispositivos IoT actualizados con datos reales",
