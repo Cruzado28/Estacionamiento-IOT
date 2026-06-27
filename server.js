@@ -12,22 +12,50 @@ const historialRoutes = require("./routes/historialRoutes");
 const configuracionRoutes = require("./routes/configuracionRoutes");
 const iotRoutes = require("./routes/iotRoutes");
 const authRoutes = require("./routes/authRoutes");
+const verificarToken = require("./middleware/authMiddleware");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 app.use(express.static("public"));
-app.use("/api/v2/dashboard", dashboardRoutes);
-app.use("/api/v2/vehiculos", vehiculoRoutes);
+app.use("/api/v2/auth", authRoutes);
+
+app.use(
+  "/api/v2/dashboard",
+  verificarToken,
+  dashboardRoutes
+);
+
+app.use(
+  "/api/v2/vehiculos",
+  verificarToken,
+  vehiculoRoutes
+);
+
 app.use(
   "/api/v2/estacionamiento",
+  verificarToken,
   estacionamientoRoutes
 );
-app.use("/api/v2/historial", historialRoutes);
-app.use("/api/v2/configuracion", configuracionRoutes);
-app.use("/api/v2/iot", iotRoutes);
-app.use("/api/v2/auth", authRoutes);
+
+app.use(
+  "/api/v2/historial",
+  verificarToken,
+  historialRoutes
+);
+
+app.use(
+  "/api/v2/configuracion",
+  verificarToken,
+  configuracionRoutes
+);
+
+app.use(
+  "/api/v2/iot",
+  verificarToken,
+  iotRoutes
+);
 
 const PORT = process.env.PORT || 3000;
 

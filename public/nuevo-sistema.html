@@ -1643,8 +1643,98 @@ async function cargarDashboardReal() {
 // ============================================================
 // AUTH
 // ============================================================
-let sistemaInicializado = false;
+const fetchOriginal = window.fetch.bind(window);
 
+let cierreSesionAutomatico = false;
+
+window.fetch = async function (recurso, opciones = {}) {
+  const url =
+    typeof recurso === "string"
+      ? recurso
+      : recurso.url;
+
+  const esApiProtegida =
+    url.startsWith("/api/v2/") &&
+    !url.startsWith("/api/v2/auth/login");
+
+  if (!esApiProtegida) {
+    return fetchOriginal(recurso, opciones);
+  }
+
+  const token = sessionStorage.getItem(
+    "smartParkingToken"
+  );
+
+  const encabezados = new Headers(
+    opciones.headers || {}
+  );
+
+  if (token) {
+    encabezados.set(
+      "Authorization",
+      `Bearer ${token}`
+    );
+  }
+
+  const respuesta = await fetchOriginal(
+    recurso,
+    {
+      ...opciones,
+      headers: encabezados
+    }
+  );
+
+  if (
+    respuesta.status === 401 &&
+    token &&
+    !cierreSesionAutomatico
+  ) {
+    cierreSesionAutomatico = true;
+
+    sessionStorage.removeItem(
+      "smartParkingToken"
+    );
+
+    sessionStorage.removeItem(
+      "smartParkingAdmin"
+    );
+
+    const pantallaLogin =
+      document.getElementById("login-screen");
+
+    const sistema =
+      document.getElementById("main-layout");
+
+    const campoContrasena =
+      document.getElementById("login-pass");
+
+    const mensajeError =
+      document.getElementById("login-err");
+
+    if (sistema) {
+      sistema.style.display = "none";
+    }
+
+    if (pantallaLogin) {
+      pantallaLogin.style.display = "flex";
+    }
+
+    if (campoContrasena) {
+      campoContrasena.value = "";
+    }
+
+    if (mensajeError) {
+      mensajeError.textContent =
+        "Tu sesión expiró. Inicia sesión nuevamente.";
+
+      mensajeError.style.display = "block";
+    }
+  }
+
+  return respuesta;
+};
+
+let sistemaInicializado = false;
 
 async function mostrarSistemaAutenticado(administrador) {
   document.getElementById(
@@ -1773,6 +1863,8 @@ async function doLogin() {
         "No se pudo iniciar sesión"
       );
     }
+
+    cierreSesionAutomatico = false;
 
     sessionStorage.setItem(
       "smartParkingToken",
