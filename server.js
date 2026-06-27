@@ -11,6 +11,7 @@ const estacionamientoRoutes = require(
 const historialRoutes = require("./routes/historialRoutes");
 const configuracionRoutes = require("./routes/configuracionRoutes");
 const iotRoutes = require("./routes/iotRoutes");
+const authRoutes = require("./routes/authRoutes");
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.use(
 app.use("/api/v2/historial", historialRoutes);
 app.use("/api/v2/configuracion", configuracionRoutes);
 app.use("/api/v2/iot", iotRoutes);
+app.use("/api/v2/auth", authRoutes);
 
 const PORT = process.env.PORT || 3000;
 

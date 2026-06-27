@@ -146,4 +146,51 @@ router.post("/login", async (req, res) => {
   }
 });
 
+// ============================================================
+// GET /api/v2/auth/verificar
+// ============================================================
+router.get("/verificar", (req, res) => {
+  try {
+    const encabezado =
+      req.headers.authorization || "";
+
+    if (!encabezado.startsWith("Bearer ")) {
+      return res.status(401).json({
+        ok: false,
+        mensaje: "No se proporcionó un token de sesión"
+      });
+    }
+
+    const token = encabezado.substring(7);
+
+    const sesion = jwt.verify(
+      token,
+      process.env.JWT_SECRET
+    );
+
+    return res.json({
+      ok: true,
+      mensaje: "Sesión válida",
+      administrador: {
+        idAdministrador:
+          sesion.idAdministrador,
+
+        usuario:
+          sesion.usuario,
+
+        nombre:
+          sesion.nombre
+      }
+    });
+  } catch (error) {
+    return res.status(401).json({
+      ok: false,
+      mensaje:
+        error.name === "TokenExpiredError"
+          ? "La sesión ha expirado"
+          : "El token de sesión no es válido"
+    });
+  }
+});
+
 module.exports = router;

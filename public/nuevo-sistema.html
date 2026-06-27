@@ -1643,25 +1643,197 @@ async function cargarDashboardReal() {
 // ============================================================
 // AUTH
 // ============================================================
-function doLogin(){
-  const u=document.getElementById('login-user').value;
-  const p=document.getElementById('login-pass').value;
-  const err=document.getElementById('login-err');
-  if(u==='admin'&&p==='admin123'){
-    err.style.display='none';
-    document.getElementById('login-screen').style.display='none';
-    document.getElementById('main-layout').style.display='flex';
-    setTimeout(init,100);
-    showToast('success','Bienvenido, Admin Central','fa-check');
-  } else {
-    err.style.display='block';
+let sistemaInicializado = false;
+
+
+async function mostrarSistemaAutenticado(administrador) {
+  document.getElementById(
+    "login-screen"
+  ).style.display = "none";
+
+  document.getElementById(
+    "main-layout"
+  ).style.display = "flex";
+
+  if (administrador) {
+    aplicarPreferenciasVisuales(
+      administrador.temaPreferido,
+      administrador.colorPrincipal
+    );
+  }
+
+  if (!sistemaInicializado) {
+    sistemaInicializado = true;
+    await init();
   }
 }
-function doLogout(){
-  document.getElementById('main-layout').style.display='none';
-  document.getElementById('login-screen').style.display='flex';
-  showToast('info','Sesión cerrada correctamente','fa-right-from-bracket');
+
+
+async function verificarSesionGuardada() {
+  const token = sessionStorage.getItem(
+    "smartParkingToken"
+  );
+
+  if (!token) {
+    return;
+  }
+
+  try {
+    const respuesta = await fetch(
+      "/api/v2/auth/verificar",
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+
+    const datos = await respuesta.json();
+
+    if (!respuesta.ok || !datos.ok) {
+      throw new Error(
+        datos.mensaje || "Sesión no válida"
+      );
+    }
+
+    let administrador = null;
+
+    try {
+      administrador = JSON.parse(
+        sessionStorage.getItem(
+          "smartParkingAdmin"
+        )
+      );
+    } catch (error) {
+      administrador = datos.administrador;
+    }
+
+    await mostrarSistemaAutenticado(
+      administrador || datos.administrador
+    );
+  } catch (error) {
+    sessionStorage.removeItem(
+      "smartParkingToken"
+    );
+
+    sessionStorage.removeItem(
+      "smartParkingAdmin"
+    );
+
+    document.getElementById(
+      "login-screen"
+    ).style.display = "flex";
+
+    document.getElementById(
+      "main-layout"
+    ).style.display = "none";
+  }
 }
+
+async function doLogin() {
+  const usuario =
+    document.getElementById("login-user").value.trim();
+
+  const contrasena =
+    document.getElementById("login-pass").value;
+
+  const errorElemento =
+    document.getElementById("login-err");
+
+  errorElemento.style.display = "none";
+
+  if (!usuario || !contrasena) {
+    errorElemento.textContent =
+      "Ingresa el usuario y la contraseña.";
+
+    errorElemento.style.display = "block";
+    return;
+  }
+
+  try {
+    const respuesta = await fetch(
+      "/api/v2/auth/login",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          usuario,
+          contrasena
+        })
+      }
+    );
+
+    const datos = await respuesta.json();
+
+    if (!respuesta.ok || !datos.ok) {
+      throw new Error(
+        datos.mensaje ||
+        "No se pudo iniciar sesión"
+      );
+    }
+
+    sessionStorage.setItem(
+      "smartParkingToken",
+      datos.token
+    );
+
+    sessionStorage.setItem(
+      "smartParkingAdmin",
+      JSON.stringify(datos.administrador)
+    );
+
+    await mostrarSistemaAutenticado(
+      datos.administrador
+    );
+
+    showToast(
+      "success",
+      `Bienvenido, ${datos.administrador.nombre}`,
+      "fa-check"
+    );
+  } catch (error) {
+    errorElemento.textContent =
+      error.message ||
+      "Usuario o contraseña incorrectos";
+
+    errorElemento.style.display = "block";
+  }
+}
+function doLogout() {
+  sessionStorage.removeItem(
+    "smartParkingToken"
+  );
+
+  sessionStorage.removeItem(
+    "smartParkingAdmin"
+  );
+
+  document.getElementById(
+    "main-layout"
+  ).style.display = "none";
+
+  document.getElementById(
+    "login-screen"
+  ).style.display = "flex";
+
+  document.getElementById(
+    "login-pass"
+  ).value = "";
+
+  showToast(
+    "info",
+    "Sesión cerrada correctamente",
+    "fa-right-from-bracket"
+  );
+}
+
+document.addEventListener(
+  "DOMContentLoaded",
+  verificarSesionGuardada
+);
+
 function togglePass(el){
   const inp=el.closest('.login-input-wrap').querySelector('input');
   if(inp.type==='password'){inp.type='text';el.className='fa-solid fa-eye-slash login-input-icon';}
