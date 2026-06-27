@@ -501,7 +501,7 @@ tbody tr:hover{background:var(--bg-hover)}
         <div><div class="section-title">Dashboard Ejecutivo</div><div class="section-sub">Visión general del sistema · Actualizado hace 2 minutos</div></div>
         <div style="display:flex;gap:8px">
           <button class="btn btn-ghost btn-sm"><i class="fa-solid fa-calendar"></i> Hoy</button>
-          <button class="btn btn-primary btn-sm" onclick="showToast('success','Reporte generado exitosamente','fa-file-export')"><i class="fa-solid fa-download"></i> Exportar</button>
+          <button class="btn btn-primary btn-sm" id="dashboard-exportar-btn" onclick="exportarDashboardPDF()"><i class="fa-solid fa-download"></i> Exportar PDF</button>
         </div>
       </div>
       <!-- KPI Grid -->
@@ -1482,6 +1482,99 @@ function obtenerClaseEstadoEspacio(estado) {
   return clases[estado] || "spot-free";
 }
 
+async function exportarDashboardPDF() {
+  const boton =
+    document.getElementById("dashboard-exportar-btn");
+
+  try {
+    if (boton) {
+      boton.disabled = true;
+      boton.innerHTML =
+        '<i class="fa-solid fa-spinner fa-spin"></i> Generando...';
+    }
+
+    const respuesta = await fetch(
+      "/api/v2/dashboard/exportar/pdf"
+    );
+
+    if (!respuesta.ok) {
+      let mensaje =
+        "No se pudo generar el reporte del Dashboard";
+
+      try {
+        const datosError = await respuesta.json();
+
+        mensaje =
+          datosError.mensaje || mensaje;
+      } catch (errorLectura) {
+        console.error(
+          "No se pudo leer el error del reporte:",
+          errorLectura
+        );
+      }
+
+      throw new Error(mensaje);
+    }
+
+    const archivo = await respuesta.blob();
+
+    const disposicion =
+      respuesta.headers.get(
+        "Content-Disposition"
+      ) || "";
+
+    const coincidencia =
+      disposicion.match(
+        /filename="?([^"]+)"?/i
+      );
+
+    const nombreArchivo =
+      coincidencia?.[1] ||
+      `dashboard-smart-parking-${new Date()
+        .toISOString()
+        .slice(0, 10)}.pdf`;
+
+    const enlaceTemporal =
+      URL.createObjectURL(archivo);
+
+    const enlace =
+      document.createElement("a");
+
+    enlace.href = enlaceTemporal;
+    enlace.download = nombreArchivo;
+
+    document.body.appendChild(enlace);
+
+    enlace.click();
+    enlace.remove();
+
+    URL.revokeObjectURL(enlaceTemporal);
+
+    showToast(
+      "success",
+      "Dashboard exportado a PDF",
+      "fa-file-pdf"
+    );
+  } catch (error) {
+    console.error(
+      "Error al exportar el Dashboard:",
+      error
+    );
+
+    showToast(
+      "error",
+      error.message ||
+      "No se pudo exportar el Dashboard",
+      "fa-triangle-exclamation"
+    );
+  } finally {
+    if (boton) {
+      boton.disabled = false;
+      boton.innerHTML =
+        '<i class="fa-solid fa-download"></i> Exportar PDF';
+    }
+  }
+}
 
 async function cargarDashboardReal() {
   try {
