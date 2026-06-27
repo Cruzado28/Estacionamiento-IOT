@@ -718,8 +718,8 @@ tbody tr:hover{background:var(--bg-hover)}
       <div class="section-hd" style="margin-bottom:16px">
         <div><div class="section-title">Historial y Reportes</div><div class="section-sub">Consulta histórica de ingresos y egresos</div></div>
         <div style="display:flex;gap:8px">
-          <button class="btn btn-secondary btn-sm" onclick="showToast('info','Exportando PDF...','fa-file-pdf')"><i class="fa-solid fa-file-pdf"></i> PDF</button>
-          <button class="btn btn-secondary btn-sm" onclick="showToast('info','Exportando Excel...','fa-table')"><i class="fa-solid fa-table"></i> Excel</button>
+          <button class="btn btn-secondary btn-sm" id="historial-pdf-btn" onclick="exportarHistorialPDF()"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+          <button class="btn btn-secondary btn-sm" id="historial-excel-btn" onclick="exportarHistorialExcel()"><i class="fa-solid fa-table"></i> Excel</button>
         </div>
       </div>
       <!-- Filters -->
@@ -2906,6 +2906,257 @@ function saveActivity(){
 // ============================================================
 // HISTORY TABLE
 // ============================================================
+async function exportarHistorialPDF() {
+  const boton =
+    document.getElementById("historial-pdf-btn");
+
+  const parametros = new URLSearchParams();
+
+  const filtros = {
+    placa:
+      document.getElementById("h-plate")?.value.trim() || "",
+
+    conductor:
+      document.getElementById("h-driver")?.value.trim() || "",
+
+    fechaInicio:
+      document.getElementById("h-from")?.value || "",
+
+    fechaFin:
+      document.getElementById("h-to")?.value || "",
+
+    estado:
+      document.getElementById("h-status")?.value || "",
+
+    tipo:
+      document.getElementById("h-type")?.value || ""
+  };
+
+  Object.entries(filtros).forEach(
+    ([nombre, valor]) => {
+      if (valor) {
+        parametros.set(nombre, valor);
+      }
+    }
+  );
+
+  const url =
+    "/api/v2/historial/exportar/pdf" +
+    (
+      parametros.toString()
+        ? `?${parametros.toString()}`
+        : ""
+    );
+
+  try {
+    if (boton) {
+      boton.disabled = true;
+      boton.innerHTML =
+        '<i class="fa-solid fa-spinner fa-spin"></i> Generando...';
+    }
+
+    const respuesta = await fetch(url);
+
+    if (!respuesta.ok) {
+      let mensaje =
+        "No se pudo generar el archivo PDF";
+
+      try {
+        const error = await respuesta.json();
+        mensaje = error.mensaje || mensaje;
+      } catch (errorLectura) {
+        console.error(
+          "No se pudo leer el error del PDF:",
+          errorLectura
+        );
+      }
+
+      throw new Error(mensaje);
+    }
+
+    const archivo = await respuesta.blob();
+
+    const disposicion =
+      respuesta.headers.get("Content-Disposition") || "";
+
+    const coincidencia =
+      disposicion.match(/filename="?([^"]+)"?/i);
+
+    const nombreArchivo =
+      coincidencia?.[1] ||
+      `historial-smart-parking-${new Date()
+        .toISOString()
+        .slice(0, 10)}.pdf`;
+
+    const enlaceTemporal =
+      URL.createObjectURL(archivo);
+
+    const enlace =
+      document.createElement("a");
+
+    enlace.href = enlaceTemporal;
+    enlace.download = nombreArchivo;
+
+    document.body.appendChild(enlace);
+
+    enlace.click();
+    enlace.remove();
+
+    URL.revokeObjectURL(enlaceTemporal);
+
+    showToast(
+      "success",
+      "Historial exportado a PDF",
+      "fa-file-pdf"
+    );
+  } catch (error) {
+    console.error(
+      "Error al exportar el historial a PDF:",
+      error
+    );
+
+    showToast(
+      "error",
+      error.message ||
+      "No se pudo exportar el historial a PDF",
+      "fa-triangle-exclamation"
+    );
+  } finally {
+    if (boton) {
+      boton.disabled = false;
+      boton.innerHTML =
+        '<i class="fa-solid fa-file-pdf"></i> PDF';
+    }
+  }
+}
+
+async function exportarHistorialExcel() {
+  const boton =
+    document.getElementById("historial-excel-btn");
+
+  const parametros = new URLSearchParams();
+
+  const filtros = {
+    placa:
+      document.getElementById("h-plate")?.value.trim() || "",
+
+    conductor:
+      document.getElementById("h-driver")?.value.trim() || "",
+
+    fechaInicio:
+      document.getElementById("h-from")?.value || "",
+
+    fechaFin:
+      document.getElementById("h-to")?.value || "",
+
+    estado:
+      document.getElementById("h-status")?.value || "",
+
+    tipo:
+      document.getElementById("h-type")?.value || ""
+  };
+
+  Object.entries(filtros).forEach(
+    ([nombre, valor]) => {
+      if (valor) {
+        parametros.set(nombre, valor);
+      }
+    }
+  );
+
+  const url =
+    "/api/v2/historial/exportar/excel" +
+    (
+      parametros.toString()
+        ? `?${parametros.toString()}`
+        : ""
+    );
+
+  try {
+    if (boton) {
+      boton.disabled = true;
+      boton.innerHTML =
+        '<i class="fa-solid fa-spinner fa-spin"></i> Generando...';
+    }
+
+    const respuesta = await fetch(url);
+
+    if (!respuesta.ok) {
+      let mensaje =
+        "No se pudo generar el archivo Excel";
+
+      try {
+        const error = await respuesta.json();
+
+        mensaje = error.mensaje || mensaje;
+      } catch (errorLectura) {
+        console.error(
+          "No se pudo leer el error de exportación:",
+          errorLectura
+        );
+      }
+
+      throw new Error(mensaje);
+    }
+
+    const archivo = await respuesta.blob();
+
+    const disposicion =
+      respuesta.headers.get("Content-Disposition") || "";
+
+    const coincidencia =
+      disposicion.match(
+        /filename="?([^"]+)"?/i
+      );
+
+    const nombreArchivo =
+      coincidencia?.[1] ||
+      `historial-smart-parking-${new Date()
+        .toISOString()
+        .slice(0, 10)}.xlsx`;
+
+    const enlaceTemporal =
+      URL.createObjectURL(archivo);
+
+    const enlace =
+      document.createElement("a");
+
+    enlace.href = enlaceTemporal;
+    enlace.download = nombreArchivo;
+
+    document.body.appendChild(enlace);
+
+    enlace.click();
+    enlace.remove();
+
+    URL.revokeObjectURL(enlaceTemporal);
+
+    showToast(
+      "success",
+      "Historial exportado a Excel",
+      "fa-file-excel"
+    );
+  } catch (error) {
+    console.error(
+      "Error al exportar el historial:",
+      error
+    );
+
+    showToast(
+      "error",
+      error.message ||
+      "No se pudo exportar el historial",
+      "fa-triangle-exclamation"
+    );
+  } finally {
+    if (boton) {
+      boton.disabled = false;
+      boton.innerHTML =
+        '<i class="fa-solid fa-table"></i> Excel';
+    }
+  }
+}
+
 function escaparHtmlHistorial(valor) {
   return String(valor ?? "")
     .replaceAll("&", "&amp;")
