@@ -586,8 +586,23 @@ tbody tr:hover{background:var(--bg-hover)}
 
     <!-- ======== PAGE: MONITOR ======== -->
     <div class="page" id="page-monitor">
-      <div class="section-hd" style="margin-bottom:16px">
-        <div><div class="section-title">Monitoreo en Tiempo Real</div><div class="section-sub">Vista operativa · <span style="color:var(--green)">Sistema activo</span></div></div>
+      <div class="section-hd" style="margin-bottom:16px">       
+          <div>
+    <div class="section-title">
+      Monitoreo en Tiempo Real
+    </div>
+
+    <div class="section-sub">
+      Vista operativa ·
+      <span
+        id="monitor-system-status"
+        style="color:var(--text-muted)"
+      >
+        Verificando sistema...
+      </span>
+    </div>
+  </div>
+     
         <button
           class="btn btn-secondary btn-sm"
           id="monitor-capture-btn"
@@ -4791,6 +4806,11 @@ function actualizarMonitorCamaraReal() {
   const indicador =
     document.getElementById("monitor-camera-rec");
 
+  const estadoSistema =
+    document.getElementById(
+      "monitor-system-status"
+    );
+
   const activos = vehiclesData.filter(
     (vehiculo) => vehiculo.inside
   ).length;
@@ -4832,11 +4852,31 @@ function actualizarMonitorCamaraReal() {
         "No registrada";
     }
 
+        if (estadoSistema) {
+      estadoSistema.textContent =
+        "Cámara no registrada";
+
+      estadoSistema.style.color =
+        "var(--red)";
+    }
+
     return;
   }
 
   const estaOnline =
     camara.status === "online";
+  
+  if (estadoSistema) {
+    estadoSistema.textContent =
+      estaOnline
+        ? "Sistema conectado"
+        : "Sistema sin conexión";
+
+    estadoSistema.style.color =
+      estaOnline
+        ? "var(--green)"
+        : "var(--red)";
+  }
 
   if (nombre) {
     nombre.textContent = camara.name;
