@@ -1365,17 +1365,266 @@ tbody tr:hover{background:var(--bg-hover)}
 <!-- MODALS -->
 <div class="modal-overlay" id="modal-vehicle">
   <div class="modal">
-    <div class="modal-hd"><span class="modal-title">Nuevo Vehículo</span><div class="modal-close" onclick="closeModal('modal-vehicle')"><i class="fa-solid fa-xmark"></i></div></div>
-    <div class="modal-body">
-      <div class="form-row"><div class="form-group"><label class="form-label">Placa</label><input class="form-input" placeholder="ABC-123"/></div><div class="form-group"><label class="form-label">Tipo</label><select class="form-select"><option>Auto</option><option>SUV</option><option>Camioneta</option><option>Moto</option></select></div></div>
-      <div class="form-row"><div class="form-group"><label class="form-label">Marca</label><input class="form-input" placeholder="Toyota"/></div><div class="form-group"><label class="form-label">Modelo</label><input class="form-input" placeholder="Corolla"/></div></div>
-      <div class="form-row"><div class="form-group"><label class="form-label">Color</label><input class="form-input" placeholder="Blanco"/></div><div class="form-group"><label class="form-label">Rol</label><select class="form-select"><option>Usuario Común</option><option>Trabajador</option><option>Cliente VIP</option><option>Propietario de Tienda</option><option>Proveedor</option></select></div></div>
-      <div class="divider"></div>
-      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:12px">Datos del conductor</div>
-      <div class="form-row"><div class="form-group"><label class="form-label">Nombre</label><input class="form-input" placeholder="Juan Pérez"/></div><div class="form-group"><label class="form-label">DNI</label><input class="form-input" placeholder="12345678"/></div></div>
-      <div class="form-row"><div class="form-group"><label class="form-label">Teléfono</label><input class="form-input" placeholder="+51 999 999 999"/></div><div class="form-group"><label class="form-label">Correo</label><input class="form-input" placeholder="correo@email.com" type="email"/></div></div>
+    <div class="modal-hd">
+      <span class="modal-title">
+        Nuevo Vehículo
+      </span>
+
+      <div
+        class="modal-close"
+        onclick="closeModal('modal-vehicle')"
+      >
+        <i class="fa-solid fa-xmark"></i>
+      </div>
     </div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-vehicle')">Cancelar</button><button class="btn btn-primary" onclick="saveVehicle()"><i class="fa-solid fa-check"></i> Guardar</button></div>
+
+    <div class="modal-body">
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">
+            Placa *
+          </label>
+
+          <input
+            class="form-input"
+            id="vehicle-plate"
+            placeholder="ABC-123"
+            maxlength="15"
+            autocomplete="off"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">
+            Tipo *
+          </label>
+
+          <select
+            class="form-select"
+            id="vehicle-type"
+          >
+            <option value="Auto">Auto</option>
+            <option value="SUV">SUV</option>
+            <option value="Camioneta">Camioneta</option>
+            <option value="Moto">Moto</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">
+            Marca
+          </label>
+
+          <input
+            class="form-input"
+            id="vehicle-brand"
+            placeholder="Toyota"
+            maxlength="60"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">
+            Modelo
+          </label>
+
+          <input
+            class="form-input"
+            id="vehicle-model"
+            placeholder="Corolla"
+            maxlength="60"
+          />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">
+            Color
+          </label>
+
+          <input
+            class="form-input"
+            id="vehicle-color"
+            placeholder="Blanco"
+            maxlength="40"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">
+            Rol *
+          </label>
+
+          <select
+            class="form-select"
+            id="vehicle-role"
+          >
+            <option value="">
+              Cargando roles...
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div style="
+        font-size:11px;
+        font-weight:600;
+        text-transform:uppercase;
+        letter-spacing:0.05em;
+        color:var(--text-muted);
+        margin-bottom:12px;
+      ">
+        Datos del conductor
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">
+            Nombre completo *
+          </label>
+
+          <input
+            class="form-input"
+            id="vehicle-driver-name"
+            placeholder="Juan Pérez"
+            maxlength="120"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">
+            DNI o documento *
+          </label>
+
+          <input
+            class="form-input"
+            id="vehicle-driver-document"
+            placeholder="12345678"
+            maxlength="20"
+          />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">
+            Teléfono
+          </label>
+
+          <input
+            class="form-input"
+            id="vehicle-driver-phone"
+            placeholder="+51 999 999 999"
+            maxlength="25"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">
+            Correo
+          </label>
+
+          <input
+            class="form-input"
+            id="vehicle-driver-email"
+            placeholder="correo@email.com"
+            type="email"
+            maxlength="150"
+          />
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div style="
+        font-size:11px;
+        font-weight:600;
+        text-transform:uppercase;
+        letter-spacing:0.05em;
+        color:var(--text-muted);
+        margin-bottom:12px;
+      ">
+        Tarjeta RFID
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">
+            UID RFID
+          </label>
+
+          <input
+            class="form-input"
+            id="vehicle-rfid"
+            placeholder="RFID-009"
+            maxlength="80"
+            autocomplete="off"
+          />
+
+          <div style="
+            margin-top:5px;
+            font-size:10px;
+            color:var(--text-muted);
+          ">
+            Puede dejarse vacío y asignarse posteriormente.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">
+            Saldo inicial (S/)
+          </label>
+
+          <input
+            class="form-input"
+            id="vehicle-balance"
+            type="number"
+            min="0"
+            step="0.01"
+            value="0.00"
+          />
+        </div>
+      </div>
+
+      <div
+        id="vehicle-form-error"
+        style="
+          display:none;
+          margin-top:10px;
+          padding:9px 11px;
+          border-radius:var(--radius-sm);
+          background:var(--red-bg);
+          color:var(--red);
+          font-size:11px;
+        "
+      ></div>
+
+    </div>
+
+    <div class="modal-footer">
+      <button
+        class="btn btn-ghost"
+        onclick="closeModal('modal-vehicle')"
+      >
+        Cancelar
+      </button>
+
+      <button
+        class="btn btn-primary"
+        id="vehicle-save-btn"
+        onclick="saveVehicle()"
+      >
+        <i class="fa-solid fa-check"></i>
+        Guardar
+      </button>
+    </div>
   </div>
 </div>
 
@@ -5909,6 +6158,37 @@ async function cargarRolesReales() {
         .join("");
     }
 
+    const selectorRolVehiculo =
+      document.getElementById("vehicle-role");
+
+    if (selectorRolVehiculo) {
+      const rolesActivos = rolesData.filter(
+        (rol) => rol.estado === "Activo"
+      );
+
+      selectorRolVehiculo.innerHTML =
+        rolesActivos.length > 0
+          ? `
+              <option value="">
+                Seleccione un rol
+              </option>
+              ${rolesActivos
+                .map(
+                  (rol) => `
+                    <option value="${rol.idRol}">
+                      ${rol.name}
+                    </option>
+                  `
+                )
+                .join("")}
+            `
+          : `
+              <option value="">
+                No existen roles activos
+              </option>
+            `;
+    }
+
     calcSim();
 
     console.log(
@@ -6198,7 +6478,67 @@ function deleteStore(i){
 // ============================================================
 // MODALS
 // ============================================================
-function openVehicleModal(){document.getElementById('modal-vehicle').classList.add('open');}
+function openVehicleModal() {
+  const campos = [
+    "vehicle-plate",
+    "vehicle-brand",
+    "vehicle-model",
+    "vehicle-color",
+    "vehicle-driver-name",
+    "vehicle-driver-document",
+    "vehicle-driver-phone",
+    "vehicle-driver-email",
+    "vehicle-rfid"
+  ];
+
+  campos.forEach((id) => {
+    const campo = document.getElementById(id);
+
+    if (campo) {
+      campo.value = "";
+    }
+  });
+
+  const tipo =
+    document.getElementById("vehicle-type");
+
+  const rol =
+    document.getElementById("vehicle-role");
+
+  const saldo =
+    document.getElementById("vehicle-balance");
+
+  const error =
+    document.getElementById("vehicle-form-error");
+
+  if (tipo) {
+    tipo.value = "Auto";
+  }
+
+  if (rol) {
+    rol.value = "";
+  }
+
+  if (saldo) {
+    saldo.value = "0.00";
+  }
+
+  if (error) {
+    error.textContent = "";
+    error.style.display = "none";
+  }
+
+  document
+    .getElementById("modal-vehicle")
+    .classList.add("open");
+
+  setTimeout(() => {
+    document
+      .getElementById("vehicle-plate")
+      ?.focus();
+  }, 100);
+}
+
 function openPromoModal(editIndex){
   const isEdit=editIndex!==undefined&&editIndex>=0;
   document.getElementById('promo-edit-index').value=isEdit?editIndex:-1;
@@ -6272,7 +6612,208 @@ function openRoleModal(editIndex){
   document.getElementById('modal-role').classList.add('open');
 }
 function closeModal(id){document.getElementById(id).classList.remove('open');}
-function saveVehicle(){closeModal('modal-vehicle');showToast('success','Vehículo registrado exitosamente','fa-check');renderVehiclesTable();}
+
+async function saveVehicle() {
+  const boton =
+    document.getElementById("vehicle-save-btn");
+
+  const contenedorError =
+    document.getElementById("vehicle-form-error");
+
+  const placa =
+    document
+      .getElementById("vehicle-plate")
+      ?.value.trim()
+      .toUpperCase() || "";
+
+  const tipo =
+    document.getElementById("vehicle-type")
+      ?.value || "";
+
+  const marca =
+    document
+      .getElementById("vehicle-brand")
+      ?.value.trim() || "";
+
+  const modelo =
+    document
+      .getElementById("vehicle-model")
+      ?.value.trim() || "";
+
+  const color =
+    document
+      .getElementById("vehicle-color")
+      ?.value.trim() || "";
+
+  const idRol = Number(
+    document.getElementById("vehicle-role")
+      ?.value
+  );
+
+  const nombreConductor =
+    document
+      .getElementById("vehicle-driver-name")
+      ?.value.trim() || "";
+
+  const documento =
+    document
+      .getElementById(
+        "vehicle-driver-document"
+      )
+      ?.value.trim() || "";
+
+  const telefono =
+    document
+      .getElementById("vehicle-driver-phone")
+      ?.value.trim() || "";
+
+  const correo =
+    document
+      .getElementById("vehicle-driver-email")
+      ?.value.trim() || "";
+
+  const uidRfid =
+    document
+      .getElementById("vehicle-rfid")
+      ?.value.trim()
+      .toUpperCase() || "";
+
+  const saldoVirtual = Number(
+    document.getElementById("vehicle-balance")
+      ?.value || 0
+  );
+
+  function mostrarError(mensaje) {
+    if (contenedorError) {
+      contenedorError.textContent = mensaje;
+      contenedorError.style.display = "block";
+    }
+
+    showToast(
+      "error",
+      mensaje,
+      "fa-triangle-exclamation"
+    );
+  }
+
+  if (contenedorError) {
+    contenedorError.style.display = "none";
+  }
+
+  if (!placa) {
+    mostrarError("Ingresa la placa del vehículo");
+    return;
+  }
+
+  if (!Number.isInteger(idRol) || idRol <= 0) {
+    mostrarError("Selecciona un rol válido");
+    return;
+  }
+
+  if (!nombreConductor) {
+    mostrarError(
+      "Ingresa el nombre del conductor"
+    );
+    return;
+  }
+
+  if (!documento) {
+    mostrarError(
+      "Ingresa el documento del conductor"
+    );
+    return;
+  }
+
+  if (
+    !Number.isFinite(saldoVirtual) ||
+    saldoVirtual < 0
+  ) {
+    mostrarError(
+      "El saldo inicial no puede ser negativo"
+    );
+    return;
+  }
+
+  const nuevoVehiculo = {
+    placa,
+    tipo,
+    marca,
+    modelo,
+    color,
+    idRol,
+    uidRfid,
+    saldoVirtual,
+
+    conductor: {
+      nombre: nombreConductor,
+      documento,
+      telefono,
+      correo
+    }
+  };
+
+  try {
+    if (boton) {
+      boton.disabled = true;
+      boton.innerHTML = `
+        <i class="fa-solid fa-spinner fa-spin"></i>
+        Guardando...
+      `;
+    }
+
+    const respuesta = await fetch(
+      "/api/v2/vehiculos",
+      {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify(nuevoVehiculo)
+      }
+    );
+
+    const datos = await respuesta.json();
+
+    if (!respuesta.ok || !datos.ok) {
+      throw new Error(
+        datos.mensaje ||
+        "No se pudo registrar el vehículo"
+      );
+    }
+
+    closeModal("modal-vehicle");
+
+    await cargarVehiculosReales();
+    await cargarDashboardReal();
+
+    showToast(
+      "success",
+      `Vehículo ${placa} registrado correctamente`,
+      "fa-circle-check"
+    );
+  } catch (error) {
+    console.error(
+      "Error al registrar el vehículo:",
+      error
+    );
+
+    mostrarError(
+      error.message ||
+      "No se pudo registrar el vehículo"
+    );
+  } finally {
+    if (boton) {
+      boton.disabled = false;
+      boton.innerHTML = `
+        <i class="fa-solid fa-check"></i>
+        Guardar
+      `;
+    }
+  }
+}
+
 function saveStore(){
   const name=document.getElementById('store-name').value.trim();
   if(!name){showToast('error','Ingresa un nombre para el establecimiento','fa-xmark');return;}
