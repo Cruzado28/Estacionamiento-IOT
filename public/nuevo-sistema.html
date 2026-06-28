@@ -3258,7 +3258,7 @@ function renderVehiclesTable(data){
         <div style="display:flex;gap:4px">
           <button class="btn btn-ghost btn-sm" onclick="openDetailPanel(${JSON.stringify(v).replace(/"/g,"'")})" title="Ver detalle"><i class="fa-solid fa-eye"></i></button>
           <button class="btn btn-ghost btn-sm" onclick="openVehicleModal(${v.id})" title="Editar"><i class="fa-solid fa-pen"></i></button>
-          <button class="btn btn-danger btn-sm" onclick="deleteVehicle('${v.plate}')" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+          <button class="btn btn-danger btn-sm" onclick="deleteVehicle(${v.id}, '${v.plate}')" title="Desactivar vehículo"><i class="fa-solid fa-trash"></i></button>
         </div>
       </td>
     </tr>
@@ -3278,12 +3278,55 @@ function filterVehicles(){
   renderVehiclesTable(filtered);
 }
 
-function deleteVehicle(plate) {
-  showToast(
-    "warning",
-    `La eliminación de ${plate} todavía no está habilitada`,
-    "fa-triangle-exclamation"
+async function deleteVehicle(idVehiculo, placa) {
+  const confirmado = window.confirm(
+    `¿Deseas desactivar el vehículo ${placa}?\n\n` +
+    "El vehículo quedará inactivo y su tarjeta RFID será desactivada."
   );
+
+  if (!confirmado) {
+    return;
+  }
+
+  try {
+    const respuesta = await fetch(
+      `/api/v2/vehiculos/${idVehiculo}`,
+      {
+        method: "DELETE"
+      }
+    );
+
+    const datos = await respuesta.json();
+
+    if (!respuesta.ok || !datos.ok) {
+      throw new Error(
+        datos.mensaje ||
+        "No se pudo desactivar el vehículo"
+      );
+    }
+
+    await cargarVehiculosReales();
+    await cargarDashboardReal();
+
+    showToast(
+      "success",
+      datos.mensaje ||
+      `Vehículo ${placa} desactivado correctamente`,
+      "fa-circle-check"
+    );
+  } catch (error) {
+    console.error(
+      "Error al desactivar el vehículo:",
+      error
+    );
+
+    showToast(
+      "error",
+      error.message ||
+      "No se pudo desactivar el vehículo",
+      "fa-triangle-exclamation"
+    );
+  }
 }
 
 // ============================================================

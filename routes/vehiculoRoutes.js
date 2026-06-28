@@ -855,6 +855,138 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+// ============================================================
+// DELETE /api/v2/vehiculos/:id
+// Desactiva un vehículo y sus tarjetas RFID
+// ============================================================
+router.delete("/:id", async (req, res) => {
+  let conexion;
+
+  try {
+    const idVehiculo = Number(req.params.id);
+
+    if (
+      !Number.isInteger(idVehiculo) ||
+      idVehiculo <= 0
+    ) {
+      return res.status(400).json({
+        ok: false,
+        mensaje:
+          "El identificador del vehículo no es válido"
+      });
+    }
+
+    conexion = await db.getConnection();
+
+    await conexion.beginTransaction();
+
+    const [vehiculos] = await conexion.query(
+      `
+        SELECT
+          id_vehiculo,
+          placa,
+          estado
+        FROM vehiculos
+        WHERE id_vehiculo = ?
+        LIMIT 1
+        FOR UPDATE
+      `,
+      [idVehiculo]
+    );
+
+    if (vehiculos.length === 0) {
+      await conexion.rollback();
+
+      return res.status(404).json({
+        ok: false,
+        mensaje: "Vehículo no encontrado"
+      });
+    }
+
+    const vehiculo = vehiculos[0];
+
+    const [sesionesActivas] =
+      await conexion.query(
+        `
+          SELECT id_sesion
+          FROM sesiones_parqueo
+          WHERE vehiculo_id = ?
+            AND fecha_hora_salida IS NULL
+            AND estado IN (
+              'Activa',
+              'Pagada',
+              'Penalizada'
+            )
+          LIMIT 1
+        `,
+        [idVehiculo]
+      );
+
+    if (sesionesActivas.length > 0) {
+      await conexion.rollback();
+
+      return res.status(409).json({
+        ok: false,
+        mensaje:
+          "No se puede desactivar un vehículo que todavía está dentro del estacionamiento"
+      });
+    }
+
+    await conexion.query(
+      `
+        UPDATE vehiculos
+        SET estado = 'Inactivo'
+        WHERE id_vehiculo = ?
+      `,
+      [idVehiculo]
+    );
+
+    await conexion.query(
+      `
+        UPDATE tarjetas_rfid
+        SET estado = 'Inactiva'
+        WHERE vehiculo_id = ?
+          AND estado = 'Activa'
+      `,
+      [idVehiculo]
+    );
+
+    await conexion.commit();
+
+    return res.json({
+      ok: true,
+      mensaje:
+        `Vehículo ${vehiculo.placa} desactivado correctamente`,
+
+      vehiculo: {
+        idVehiculo,
+        placa: vehiculo.placa,
+        estado: "Inactivo"
+      }
+    });
+  } catch (error) {
+    if (conexion) {
+      await conexion.rollback();
+    }
+
+    console.error(
+      "Error al desactivar el vehículo:",
+      error.message
+    );
+
+    return res.status(500).json({
+      ok: false,
+      mensaje:
+        "Error al desactivar el vehículo",
+      error: error.message
+    });
+  } finally {
+    if (conexion) {
+      conexion.release();
+    }
+  }
+});
+
 /**
  * GET /api/v2/vehiculos/:id
  * Devuelve el detalle de un vehículo específico.
