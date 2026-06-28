@@ -29,6 +29,10 @@ const rolesRoutes = require(
   "./routes/rolesRoutes"
 );
 
+const promocionesRoutes = require(
+  "./routes/promocionesRoutes"
+);
+
 const iotRoutes = require(
   "./routes/iotRoutes"
 );
@@ -148,6 +152,12 @@ app.use(
   "/api/v2/configuracion/roles",
   verificarToken,
   rolesRoutes
+);
+
+app.use(
+  "/api/v2/configuracion/promociones",
+  verificarToken,
+  promocionesRoutes
 );
 
 app.use(
