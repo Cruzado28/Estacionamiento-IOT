@@ -440,6 +440,421 @@ router.post("/", async (req, res) => {
   }
 });
 
+// ============================================================
+// PUT /api/v2/vehiculos/:id
+// Actualiza conductor, vehículo y tarjeta RFID
+// ============================================================
+router.put("/:id", async (req, res) => {
+  let conexion;
+
+  try {
+    const idVehiculo = Number(req.params.id);
+
+    const placa = String(
+      req.body.placa || ""
+    ).trim().toUpperCase();
+
+    const tipo = String(
+      req.body.tipo || ""
+    ).trim();
+
+    const marca = String(
+      req.body.marca || ""
+    ).trim();
+
+    const modelo = String(
+      req.body.modelo || ""
+    ).trim();
+
+    const color = String(
+      req.body.color || ""
+    ).trim();
+
+    const idRol = Number(req.body.idRol);
+
+    const conductor = req.body.conductor || {};
+
+    const nombreConductor = String(
+      conductor.nombre || ""
+    ).trim();
+
+    const documento = String(
+      conductor.documento || ""
+    ).trim();
+
+    const telefono = String(
+      conductor.telefono || ""
+    ).trim();
+
+    const correo = String(
+      conductor.correo || ""
+    ).trim().toLowerCase();
+
+    const uidRfid = String(
+      req.body.uidRfid || ""
+    ).trim().toUpperCase();
+
+    const saldoVirtual = Number(
+      req.body.saldoVirtual || 0
+    );
+
+    if (
+      !Number.isInteger(idVehiculo) ||
+      idVehiculo <= 0
+    ) {
+      return res.status(400).json({
+        ok: false,
+        mensaje:
+          "El identificador del vehículo no es válido"
+      });
+    }
+
+    if (!placa) {
+      return res.status(400).json({
+        ok: false,
+        mensaje: "La placa es obligatoria"
+      });
+    }
+
+    if (!tipo) {
+      return res.status(400).json({
+        ok: false,
+        mensaje:
+          "El tipo de vehículo es obligatorio"
+      });
+    }
+
+    if (!Number.isInteger(idRol) || idRol <= 0) {
+      return res.status(400).json({
+        ok: false,
+        mensaje:
+          "Debes seleccionar un rol válido"
+      });
+    }
+
+    if (!nombreConductor) {
+      return res.status(400).json({
+        ok: false,
+        mensaje:
+          "El nombre del conductor es obligatorio"
+      });
+    }
+
+    if (!documento) {
+      return res.status(400).json({
+        ok: false,
+        mensaje:
+          "El documento del conductor es obligatorio"
+      });
+    }
+
+    if (
+      !Number.isFinite(saldoVirtual) ||
+      saldoVirtual < 0
+    ) {
+      return res.status(400).json({
+        ok: false,
+        mensaje:
+          "El saldo virtual no puede ser negativo"
+      });
+    }
+
+    conexion = await db.getConnection();
+
+    await conexion.beginTransaction();
+
+    const [vehiculos] = await conexion.query(
+      `
+        SELECT
+          v.id_vehiculo,
+          v.conductor_id,
+
+          (
+            SELECT MIN(t.id_tarjeta)
+            FROM tarjetas_rfid t
+            WHERE
+              t.vehiculo_id = v.id_vehiculo
+              AND t.estado = 'Activa'
+          ) AS id_tarjeta
+
+        FROM vehiculos v
+        WHERE v.id_vehiculo = ?
+        LIMIT 1
+        FOR UPDATE
+      `,
+      [idVehiculo]
+    );
+
+    if (vehiculos.length === 0) {
+      await conexion.rollback();
+
+      return res.status(404).json({
+        ok: false,
+        mensaje: "Vehículo no encontrado"
+      });
+    }
+
+    const vehiculoActual = vehiculos[0];
+
+    const idConductor =
+      vehiculoActual.conductor_id;
+
+    const idTarjetaActual =
+      vehiculoActual.id_tarjeta;
+
+    const [roles] = await conexion.query(
+      `
+        SELECT id_rol
+        FROM roles
+        WHERE id_rol = ?
+          AND estado = 'Activo'
+        LIMIT 1
+      `,
+      [idRol]
+    );
+
+    if (roles.length === 0) {
+      await conexion.rollback();
+
+      return res.status(400).json({
+        ok: false,
+        mensaje:
+          "El rol seleccionado no existe o está inactivo"
+      });
+    }
+
+    const [placasExistentes] =
+      await conexion.query(
+        `
+          SELECT id_vehiculo
+          FROM vehiculos
+          WHERE placa = ?
+            AND id_vehiculo <> ?
+          LIMIT 1
+        `,
+        [placa, idVehiculo]
+      );
+
+    if (placasExistentes.length > 0) {
+      await conexion.rollback();
+
+      return res.status(409).json({
+        ok: false,
+        mensaje:
+          "Otro vehículo ya utiliza esa placa"
+      });
+    }
+
+    const [documentosExistentes] =
+      await conexion.query(
+        `
+          SELECT id_conductor
+          FROM conductores
+          WHERE documento = ?
+            AND id_conductor <> ?
+          LIMIT 1
+        `,
+        [documento, idConductor]
+      );
+
+    if (documentosExistentes.length > 0) {
+      await conexion.rollback();
+
+      return res.status(409).json({
+        ok: false,
+        mensaje:
+          "Otro conductor ya utiliza ese documento"
+      });
+    }
+
+    if (correo) {
+      const [correosExistentes] =
+        await conexion.query(
+          `
+            SELECT id_conductor
+            FROM conductores
+            WHERE correo = ?
+              AND id_conductor <> ?
+            LIMIT 1
+          `,
+          [correo, idConductor]
+        );
+
+      if (correosExistentes.length > 0) {
+        await conexion.rollback();
+
+        return res.status(409).json({
+          ok: false,
+          mensaje:
+            "Otro conductor ya utiliza ese correo"
+        });
+      }
+    }
+
+    if (uidRfid) {
+      const [tarjetasExistentes] =
+        await conexion.query(
+          `
+            SELECT id_tarjeta
+            FROM tarjetas_rfid
+            WHERE uid_rfid = ?
+              AND (
+                ? IS NULL
+                OR id_tarjeta <> ?
+              )
+            LIMIT 1
+          `,
+          [
+            uidRfid,
+            idTarjetaActual,
+            idTarjetaActual
+          ]
+        );
+
+      if (tarjetasExistentes.length > 0) {
+        await conexion.rollback();
+
+        return res.status(409).json({
+          ok: false,
+          mensaje:
+            "Otra tarjeta ya utiliza ese UID RFID"
+        });
+      }
+    }
+
+    await conexion.query(
+      `
+        UPDATE conductores
+        SET
+          nombre_completo = ?,
+          documento = ?,
+          telefono = ?,
+          correo = ?
+        WHERE id_conductor = ?
+      `,
+      [
+        nombreConductor,
+        documento,
+        telefono || null,
+        correo || null,
+        idConductor
+      ]
+    );
+
+    await conexion.query(
+      `
+        UPDATE vehiculos
+        SET
+          placa = ?,
+          rol_id = ?,
+          tipo = ?,
+          marca = ?,
+          modelo = ?,
+          color = ?
+        WHERE id_vehiculo = ?
+      `,
+      [
+        placa,
+        idRol,
+        tipo,
+        marca || null,
+        modelo || null,
+        color || null,
+        idVehiculo
+      ]
+    );
+
+    if (uidRfid && idTarjetaActual) {
+      await conexion.query(
+        `
+          UPDATE tarjetas_rfid
+          SET
+            uid_rfid = ?,
+            saldo_virtual = ?,
+            estado = 'Activa'
+          WHERE id_tarjeta = ?
+        `,
+        [
+          uidRfid,
+          saldoVirtual,
+          idTarjetaActual
+        ]
+      );
+    } else if (uidRfid && !idTarjetaActual) {
+      await conexion.query(
+        `
+          INSERT INTO tarjetas_rfid (
+            uid_rfid,
+            vehiculo_id,
+            saldo_virtual,
+            estado
+          )
+          VALUES (?, ?, ?, 'Activa')
+        `,
+        [
+          uidRfid,
+          idVehiculo,
+          saldoVirtual
+        ]
+      );
+    } else if (!uidRfid && idTarjetaActual) {
+      await conexion.query(
+        `
+          UPDATE tarjetas_rfid
+          SET estado = 'Inactiva'
+          WHERE id_tarjeta = ?
+        `,
+        [idTarjetaActual]
+      );
+    }
+
+    await conexion.commit();
+
+    return res.json({
+      ok: true,
+      mensaje:
+        "Vehículo actualizado correctamente",
+
+      vehiculo: {
+        idVehiculo,
+        placa,
+        idConductor,
+        idRol,
+        uidRfid: uidRfid || null,
+        saldoVirtual
+      }
+    });
+  } catch (error) {
+    if (conexion) {
+      await conexion.rollback();
+    }
+
+    console.error(
+      "Error al actualizar el vehículo:",
+      error.message
+    );
+
+    if (error.code === "ER_DUP_ENTRY") {
+      return res.status(409).json({
+        ok: false,
+        mensaje:
+          "La placa, documento, correo o RFID ya está registrado"
+      });
+    }
+
+    return res.status(500).json({
+      ok: false,
+      mensaje:
+        "Error al actualizar el vehículo",
+      error: error.message
+    });
+  } finally {
+    if (conexion) {
+      conexion.release();
+    }
+  }
+});
+
 /**
  * GET /api/v2/vehiculos/:id
  * Devuelve el detalle de un vehículo específico.

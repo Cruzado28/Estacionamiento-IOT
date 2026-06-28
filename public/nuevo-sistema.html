@@ -1366,7 +1366,10 @@ tbody tr:hover{background:var(--bg-hover)}
 <div class="modal-overlay" id="modal-vehicle">
   <div class="modal">
     <div class="modal-hd">
-      <span class="modal-title">
+      <span
+        class="modal-title"
+        id="vehicle-modal-title"
+      >
         Nuevo Vehículo
       </span>
 
@@ -1379,6 +1382,12 @@ tbody tr:hover{background:var(--bg-hover)}
     </div>
 
     <div class="modal-body">
+
+      <input
+        type="hidden"
+        id="vehicle-edit-id"
+        value=""
+      />
 
       <div class="form-row">
         <div class="form-group">
@@ -3248,7 +3257,7 @@ function renderVehiclesTable(data){
       <td>
         <div style="display:flex;gap:4px">
           <button class="btn btn-ghost btn-sm" onclick="openDetailPanel(${JSON.stringify(v).replace(/"/g,"'")})" title="Ver detalle"><i class="fa-solid fa-eye"></i></button>
-          <button class="btn btn-ghost btn-sm" onclick="showToast('info','Editando ${v.plate}','fa-pen')" title="Editar"><i class="fa-solid fa-pen"></i></button>
+          <button class="btn btn-ghost btn-sm" onclick="openVehicleModal(${v.id})" title="Editar"><i class="fa-solid fa-pen"></i></button>
           <button class="btn btn-danger btn-sm" onclick="deleteVehicle('${v.plate}')" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
         </div>
       </td>
@@ -3483,6 +3492,7 @@ async function cargarVehiculosReales() {
 
       return {
         id: vehiculo.idVehiculo,
+        idRol: Number(vehiculo.idRol),
         plate: vehiculo.placa,
         owner: vehiculo.conductor,
         type: vehiculo.tipo,
@@ -6478,8 +6488,23 @@ function deleteStore(i){
 // ============================================================
 // MODALS
 // ============================================================
-function openVehicleModal() {
-  const campos = [
+function openVehicleModal(idVehiculo = null) {
+  const modal =
+    document.getElementById("modal-vehicle");
+
+  const titulo =
+    document.getElementById("vehicle-modal-title");
+
+  const campoId =
+    document.getElementById("vehicle-edit-id");
+
+  const boton =
+    document.getElementById("vehicle-save-btn");
+
+  const error =
+    document.getElementById("vehicle-form-error");
+
+  const camposTexto = [
     "vehicle-plate",
     "vehicle-brand",
     "vehicle-model",
@@ -6491,7 +6516,7 @@ function openVehicleModal() {
     "vehicle-rfid"
   ];
 
-  campos.forEach((id) => {
+  camposTexto.forEach((id) => {
     const campo = document.getElementById(id);
 
     if (campo) {
@@ -6508,9 +6533,6 @@ function openVehicleModal() {
   const saldo =
     document.getElementById("vehicle-balance");
 
-  const error =
-    document.getElementById("vehicle-form-error");
-
   if (tipo) {
     tipo.value = "Auto";
   }
@@ -6523,14 +6545,176 @@ function openVehicleModal() {
     saldo.value = "0.00";
   }
 
+  if (campoId) {
+    campoId.value = "";
+  }
+
   if (error) {
     error.textContent = "";
     error.style.display = "none";
   }
 
-  document
-    .getElementById("modal-vehicle")
-    .classList.add("open");
+  if (idVehiculo !== null) {
+    const vehiculo = vehiclesData.find(
+      (registro) =>
+        Number(registro.id) === Number(idVehiculo)
+    );
+
+    if (!vehiculo) {
+      showToast(
+        "error",
+        "No se encontró el vehículo seleccionado",
+        "fa-triangle-exclamation"
+      );
+
+      return;
+    }
+
+    if (campoId) {
+      campoId.value = vehiculo.id;
+    }
+
+    if (titulo) {
+      titulo.textContent = "Editar Vehículo";
+    }
+
+    if (boton) {
+      boton.innerHTML = `
+        <i class="fa-solid fa-check"></i>
+        Guardar cambios
+      `;
+    }
+
+    const campoPlaca =
+      document.getElementById("vehicle-plate");
+
+    const campoTipo =
+      document.getElementById("vehicle-type");
+
+    const campoMarca =
+      document.getElementById("vehicle-brand");
+
+    const campoModelo =
+      document.getElementById("vehicle-model");
+
+    const campoColor =
+      document.getElementById("vehicle-color");
+
+    const campoRol =
+      document.getElementById("vehicle-role");
+
+    const campoNombre =
+      document.getElementById(
+        "vehicle-driver-name"
+      );
+
+    const campoDocumento =
+      document.getElementById(
+        "vehicle-driver-document"
+      );
+
+    const campoTelefono =
+      document.getElementById(
+        "vehicle-driver-phone"
+      );
+
+    const campoCorreo =
+      document.getElementById(
+        "vehicle-driver-email"
+      );
+
+    const campoRfid =
+      document.getElementById("vehicle-rfid");
+
+    const campoSaldo =
+      document.getElementById("vehicle-balance");
+
+    if (campoPlaca) {
+      campoPlaca.value = vehiculo.plate || "";
+    }
+
+    if (campoTipo) {
+      campoTipo.value = vehiculo.type || "Auto";
+    }
+
+    if (campoMarca) {
+      campoMarca.value =
+        vehiculo.brand === "No especificada"
+          ? ""
+          : vehiculo.brand || "";
+    }
+
+    if (campoModelo) {
+      campoModelo.value =
+        vehiculo.model === "No especificado"
+          ? ""
+          : vehiculo.model || "";
+    }
+
+    if (campoColor) {
+      campoColor.value =
+        vehiculo.color === "No especificado"
+          ? ""
+          : vehiculo.color || "";
+    }
+
+    if (campoRol) {
+      campoRol.value = String(
+        vehiculo.idRol || ""
+      );
+    }
+
+    if (campoNombre) {
+      campoNombre.value = vehiculo.owner || "";
+    }
+
+    if (campoDocumento) {
+      campoDocumento.value =
+        vehiculo.doc === "—"
+          ? ""
+          : vehiculo.doc || "";
+    }
+
+    if (campoTelefono) {
+      campoTelefono.value =
+        vehiculo.phone === "—"
+          ? ""
+          : vehiculo.phone || "";
+    }
+
+    if (campoCorreo) {
+      campoCorreo.value =
+        vehiculo.email === "—"
+          ? ""
+          : vehiculo.email || "";
+    }
+
+    if (campoRfid) {
+      campoRfid.value =
+        vehiculo.uidRfid || "";
+    }
+
+    if (campoSaldo) {
+      campoSaldo.value = Number(
+        vehiculo.saldoVirtual || 0
+      ).toFixed(2);
+    }
+  } else {
+    if (titulo) {
+      titulo.textContent = "Nuevo Vehículo";
+    }
+
+    if (boton) {
+      boton.innerHTML = `
+        <i class="fa-solid fa-check"></i>
+        Guardar
+      `;
+    }
+  }
+
+  if (modal) {
+    modal.classList.add("open");
+  }
 
   setTimeout(() => {
     document
@@ -6620,6 +6804,15 @@ async function saveVehicle() {
   const contenedorError =
     document.getElementById("vehicle-form-error");
 
+  const idEdicion = Number(
+    document.getElementById("vehicle-edit-id")
+      ?.value || 0
+  );
+
+  const estaEditando =
+    Number.isInteger(idEdicion) &&
+    idEdicion > 0;
+
   const placa =
     document
       .getElementById("vehicle-plate")
@@ -6697,16 +6890,31 @@ async function saveVehicle() {
   }
 
   if (contenedorError) {
+    contenedorError.textContent = "";
     contenedorError.style.display = "none";
   }
 
   if (!placa) {
-    mostrarError("Ingresa la placa del vehículo");
+    mostrarError(
+      "Ingresa la placa del vehículo"
+    );
     return;
   }
 
-  if (!Number.isInteger(idRol) || idRol <= 0) {
-    mostrarError("Selecciona un rol válido");
+  if (!tipo) {
+    mostrarError(
+      "Selecciona el tipo de vehículo"
+    );
+    return;
+  }
+
+  if (
+    !Number.isInteger(idRol) ||
+    idRol <= 0
+  ) {
+    mostrarError(
+      "Selecciona un rol válido"
+    );
     return;
   }
 
@@ -6734,7 +6942,7 @@ async function saveVehicle() {
     return;
   }
 
-  const nuevoVehiculo = {
+  const datosVehiculo = {
     placa,
     tipo,
     marca,
@@ -6752,34 +6960,46 @@ async function saveVehicle() {
     }
   };
 
+  const url = estaEditando
+    ? `/api/v2/vehiculos/${idEdicion}`
+    : "/api/v2/vehiculos";
+
+  const metodo = estaEditando
+    ? "PUT"
+    : "POST";
+
   try {
     if (boton) {
       boton.disabled = true;
+
       boton.innerHTML = `
         <i class="fa-solid fa-spinner fa-spin"></i>
-        Guardando...
+        ${estaEditando
+          ? "Actualizando..."
+          : "Guardando..."}
       `;
     }
 
-    const respuesta = await fetch(
-      "/api/v2/vehiculos",
-      {
-        method: "POST",
+    const respuesta = await fetch(url, {
+      method: metodo,
 
-        headers: {
-          "Content-Type": "application/json"
-        },
+      headers: {
+        "Content-Type": "application/json"
+      },
 
-        body: JSON.stringify(nuevoVehiculo)
-      }
-    );
+      body: JSON.stringify(datosVehiculo)
+    });
 
     const datos = await respuesta.json();
 
     if (!respuesta.ok || !datos.ok) {
       throw new Error(
         datos.mensaje ||
-        "No se pudo registrar el vehículo"
+        (
+          estaEditando
+            ? "No se pudo actualizar el vehículo"
+            : "No se pudo registrar el vehículo"
+        )
       );
     }
 
@@ -6790,26 +7010,40 @@ async function saveVehicle() {
 
     showToast(
       "success",
-      `Vehículo ${placa} registrado correctamente`,
+      estaEditando
+        ? `Vehículo ${placa} actualizado correctamente`
+        : `Vehículo ${placa} registrado correctamente`,
       "fa-circle-check"
     );
   } catch (error) {
     console.error(
-      "Error al registrar el vehículo:",
+      estaEditando
+        ? "Error al actualizar el vehículo:"
+        : "Error al registrar el vehículo:",
       error
     );
 
     mostrarError(
       error.message ||
-      "No se pudo registrar el vehículo"
+      (
+        estaEditando
+          ? "No se pudo actualizar el vehículo"
+          : "No se pudo registrar el vehículo"
+      )
     );
   } finally {
     if (boton) {
       boton.disabled = false;
-      boton.innerHTML = `
-        <i class="fa-solid fa-check"></i>
-        Guardar
-      `;
+
+      boton.innerHTML = estaEditando
+        ? `
+            <i class="fa-solid fa-check"></i>
+            Guardar cambios
+          `
+        : `
+            <i class="fa-solid fa-check"></i>
+            Guardar
+          `;
     }
   }
 }
