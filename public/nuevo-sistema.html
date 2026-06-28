@@ -362,7 +362,6 @@ tbody tr:hover{background:var(--bg-hover)}
 .sublayout-side{width:300px;flex-shrink:0}
 /* Los módulos de roles, promociones y establecimientos aún son de consulta.
    Sus botones permanecen ocultos hasta conectar sus operaciones con MySQL. */
-#tariffs-t2 button,
 #tariffs-t3 button,
 #tariffs-t4 button{display:none!important}
 
@@ -6640,27 +6639,198 @@ async function cargarRolesReales() {
   }
 }
 
-function renderRoles(){
-  const el=document.getElementById('roles-list');
-  if(!el)return;
-  const colors={gray:'badge-gray',green:'badge-green',purple:'badge-purple',blue:'badge-blue',amber:'badge-amber',teal:'badge-teal'};
-  el.innerHTML=rolesData.map((r,i)=>`
-    <div class="role-card">
-      <div style="width:36px;height:36px;border-radius:var(--radius-sm);background:var(--accent-glow);display:flex;align-items:center;justify-content:center;color:var(--accent)"><i class="fa-solid ${r.icon}" style="font-size:17px"></i></div>
-      <div style="flex:1">
-        <div style="font-size:13px;font-weight:600">${r.name}</div>
-        <div style="font-size:11px;color:var(--text-secondary)">${r.desc}</div>
+function renderRoles() {
+  const contenedor =
+    document.getElementById("roles-list");
+
+  if (!contenedor) {
+    return;
+  }
+
+  if (!Array.isArray(rolesData) || rolesData.length === 0) {
+    contenedor.innerHTML = `
+      <div class="empty-state">
+        <i class="fa-solid fa-users-gear"></i>
+        <div>No existen roles registrados.</div>
       </div>
-      <div style="text-align:right;display:flex;flex-direction:column;gap:4px;align-items:flex-end">
-        <span class="badge ${colors[r.color]||'badge-gray'}">${r.discount}</span>
-        <span style="font-size:11px;color:var(--text-muted)">${r.hours}</span>
-      </div>
-      <div style="display:flex;gap:4px;margin-left:8px">
-        <button class="btn btn-ghost btn-sm" onclick="openRoleModal(${i})" title="Editar rol"><i class="fa-solid fa-pen"></i></button>
-        <button class="btn btn-danger btn-sm" onclick="deleteRole(${i})" title="Eliminar rol"><i class="fa-solid fa-trash"></i></button>
-      </div>
-    </div>
-  `).join('');
+    `;
+
+    return;
+  }
+
+  const colores = {
+    gray: "badge-gray",
+    green: "badge-green",
+    purple: "badge-purple",
+    blue: "badge-blue",
+    amber: "badge-amber",
+    teal: "badge-teal"
+  };
+
+  contenedor.innerHTML = rolesData.map(
+    (rol, indice) => {
+      const activo = rol.estado === "Activo";
+
+      const beneficioPrincipal =
+        rol.exoneracionTotal
+          ? "Exonerado"
+          : `${rol.porcentajeDescuento}%`;
+
+      const beneficioSecundario =
+        rol.exoneracionTotal
+          ? "Sin cobro por estacionamiento"
+          : `${rol.horasGratis}h gratis`;
+
+      return `
+        <div
+          class="role-card"
+          style="${activo ? "" : "opacity:0.68;"}"
+        >
+          <div
+            style="
+              width:36px;
+              height:36px;
+              border-radius:var(--radius-sm);
+              background:var(--accent-glow);
+              display:flex;
+              align-items:center;
+              justify-content:center;
+              color:var(--accent);
+            "
+          >
+            <i
+              class="fa-solid ${escaparHtmlEvento(
+                rol.icon || "fa-user"
+              )}"
+              style="font-size:17px"
+            ></i>
+          </div>
+
+          <div style="flex:1">
+            <div
+              style="
+                display:flex;
+                align-items:center;
+                gap:7px;
+                flex-wrap:wrap;
+              "
+            >
+              <div style="font-size:13px;font-weight:600">
+                ${escaparHtmlEvento(rol.name)}
+              </div>
+
+              <span
+                class="badge ${
+                  activo ? "badge-green" : "badge-gray"
+                }"
+              >
+                ${escaparHtmlEvento(rol.estado)}
+              </span>
+            </div>
+
+            <div
+              style="
+                font-size:11px;
+                color:var(--text-secondary);
+                margin-top:3px;
+              "
+            >
+              ${escaparHtmlEvento(rol.desc)}
+            </div>
+
+            <div
+              style="
+                font-size:10px;
+                color:var(--text-muted);
+                margin-top:3px;
+              "
+            >
+              Prioridad:
+              ${escaparHtmlEvento(
+                rol.prioridadAcceso === "Maxima"
+                  ? "Máxima"
+                  : rol.prioridadAcceso
+              )}
+            </div>
+          </div>
+
+          <div
+            style="
+              text-align:right;
+              display:flex;
+              flex-direction:column;
+              gap:4px;
+              align-items:flex-end;
+            "
+          >
+            <span
+              class="badge ${
+                colores[rol.color] || "badge-gray"
+              }"
+            >
+              ${beneficioPrincipal}
+            </span>
+
+            <span
+              style="
+                font-size:11px;
+                color:var(--text-muted);
+              "
+            >
+              ${beneficioSecundario}
+            </span>
+          </div>
+
+          <div
+            style="
+              display:flex;
+              gap:4px;
+              margin-left:8px;
+            "
+          >
+            <button
+              class="btn btn-ghost btn-sm"
+              onclick="openRoleModal(${indice})"
+              title="Editar rol"
+            >
+              <i class="fa-solid fa-pen"></i>
+            </button>
+
+            <button
+              class="btn ${
+                activo
+                  ? "btn-danger"
+                  : "btn-ghost"
+              } btn-sm"
+              onclick="cambiarEstadoRol(${indice})"
+              title="${
+                activo
+                  ? "Desactivar rol"
+                  : "Reactivar rol"
+              }"
+              ${
+                activo
+                  ? ""
+                  : `style="
+                      color:var(--green);
+                      border-color:rgba(34,197,94,0.35);
+                      background:var(--green-bg);
+                    "`
+              }
+            >
+              <i
+                class="fa-solid ${
+                  activo
+                    ? "fa-pause"
+                    : "fa-rotate-left"
+                }"
+              ></i>
+            </button>
+          </div>
+        </div>
+      `;
+    }
+  ).join("");
 }
 
 async function cargarPromocionesReales() {
@@ -7191,30 +7361,112 @@ function openStoreModal(editIndex){
   document.getElementById('store-kind-hint').textContent='Ej: supermercado, restaurante, farmacia, tienda de ropa';
   document.getElementById('modal-store').classList.add('open');
 }
-function openRoleModal(editIndex){
-  const isEdit=editIndex!==undefined&&editIndex>=0;
-  document.getElementById('role-edit-index').value=isEdit?editIndex:-1;
-  document.getElementById('role-modal-title').textContent=isEdit?'Editar Rol':'Nuevo Rol';
-  document.getElementById('role-save-btn').innerHTML=`<i class="fa-solid fa-check"></i> ${isEdit?'Guardar Cambios':'Crear Rol'}`;
-  if(isEdit){
-    const r=rolesData[editIndex];
-    document.getElementById('role-name').value=r.name;
-    document.getElementById('role-icon').value=r.icon;
-    document.getElementById('role-desc').value=r.desc;
-    document.getElementById('role-discount').value=parseInt(r.discount)||0;
-    document.getElementById('role-hours').value=parseInt(r.hours)||0;
-    document.getElementById('role-priority').selectedIndex=0;
-    if(r.hours==='Exonerado')document.getElementById('role-exempt-toggle').classList.add('on');
-    else document.getElementById('role-exempt-toggle').classList.remove('on');
-  } else {
-    document.getElementById('role-name').value='';
-    document.getElementById('role-desc').value='';
-    document.getElementById('role-discount').value='0';
-    document.getElementById('role-hours').value='0';
-    document.getElementById('role-priority').selectedIndex=0;
-    document.getElementById('role-exempt-toggle').classList.remove('on');
+function openRoleModal(editIndex) {
+  const estaEditando =
+    editIndex !== undefined &&
+    editIndex >= 0;
+
+  const campoIndice =
+    document.getElementById("role-edit-index");
+
+  const titulo =
+    document.getElementById("role-modal-title");
+
+  const boton =
+    document.getElementById("role-save-btn");
+
+  const campoNombre =
+    document.getElementById("role-name");
+
+  const campoIcono =
+    document.getElementById("role-icon");
+
+  const campoDescripcion =
+    document.getElementById("role-desc");
+
+  const campoDescuento =
+    document.getElementById("role-discount");
+
+  const campoHoras =
+    document.getElementById("role-hours");
+
+  const campoPrioridad =
+    document.getElementById("role-priority");
+
+  const selectorExoneracion =
+    document.getElementById(
+      "role-exempt-toggle"
+    );
+
+  if (campoIndice) {
+    campoIndice.value =
+      estaEditando ? editIndex : -1;
   }
-  document.getElementById('modal-role').classList.add('open');
+
+  if (titulo) {
+    titulo.textContent =
+      estaEditando ? "Editar Rol" : "Nuevo Rol";
+  }
+
+  if (boton) {
+    boton.disabled = false;
+
+    boton.innerHTML = `
+      <i class="fa-solid fa-check"></i>
+      ${
+        estaEditando
+          ? "Guardar Cambios"
+          : "Crear Rol"
+      }
+    `;
+  }
+
+  if (estaEditando) {
+    const rol = rolesData[editIndex];
+
+    if (!rol) {
+      showToast(
+        "error",
+        "No se encontró el rol seleccionado",
+        "fa-triangle-exclamation"
+      );
+
+      return;
+    }
+
+    campoNombre.value = rol.name || "";
+    campoIcono.value = rol.icon || "fa-user";
+    campoDescripcion.value = rol.desc || "";
+
+    campoDescuento.value =
+      Number(rol.porcentajeDescuento) || 0;
+
+    campoHoras.value =
+      Number(rol.horasGratis) || 0;
+
+    campoPrioridad.value =
+      rol.prioridadAcceso === "Maxima"
+        ? "Máxima"
+        : rol.prioridadAcceso || "Normal";
+
+    selectorExoneracion.classList.toggle(
+      "on",
+      Boolean(rol.exoneracionTotal)
+    );
+  } else {
+    campoNombre.value = "";
+    campoIcono.value = "fa-user";
+    campoDescripcion.value = "";
+    campoDescuento.value = "0";
+    campoHoras.value = "0";
+    campoPrioridad.value = "Normal";
+
+    selectorExoneracion.classList.remove("on");
+  }
+
+  document
+    .getElementById("modal-role")
+    .classList.add("open");
 }
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 
@@ -7490,40 +7742,290 @@ function saveStore(){
   closeModal('modal-store');
   renderStores();
 }
-function saveRole(){
-  const name=document.getElementById('role-name').value.trim();
-  if(!name){showToast('error','Ingresa un nombre para el rol','fa-xmark');return;}
-  const icon=document.getElementById('role-icon').value;
-  const desc=document.getElementById('role-desc').value.trim()||'Rol personalizado';
-  const exempt=document.getElementById('role-exempt-toggle').classList.contains('on');
-  const discount=exempt?100:(parseInt(document.getElementById('role-discount').value)||0);
-  const hours=parseInt(document.getElementById('role-hours').value)||0;
-  const colorPool=['gray','green','purple','blue','amber','teal'];
-  const editIndex=parseInt(document.getElementById('role-edit-index').value);
-  if(editIndex>=0){
-    const existingColor=rolesData[editIndex].color;
-    rolesData[editIndex]={
-      name:name,icon:icon,discount:discount+'%',
-      hours:hours>0?hours+'h gratis':(exempt?'Exonerado':'0h gratis'),
-      color:existingColor,desc:desc
-    };
-    showToast('success','Rol "'+name+'" actualizado correctamente','fa-check');
-  } else {
-    rolesData.push({
-      name:name,icon:icon,discount:discount+'%',
-      hours:hours>0?hours+'h gratis':(exempt?'Exonerado':'0h gratis'),
-      color:colorPool[rolesData.length%colorPool.length],desc:desc
-    });
-    showToast('success','Rol "'+name+'" creado correctamente','fa-check');
+async function saveRole() {
+  const boton =
+    document.getElementById("role-save-btn");
+
+  const indiceEdicion = Number(
+    document.getElementById("role-edit-index")
+      ?.value ?? -1
+  );
+
+  const estaEditando =
+    Number.isInteger(indiceEdicion) &&
+    indiceEdicion >= 0;
+
+  const rolActual = estaEditando
+    ? rolesData[indiceEdicion]
+    : null;
+
+  const nombre =
+    document
+      .getElementById("role-name")
+      ?.value.trim() || "";
+
+  const icono =
+    document.getElementById("role-icon")
+      ?.value || "fa-user";
+
+  const descripcion =
+    document
+      .getElementById("role-desc")
+      ?.value.trim() ||
+    "Rol registrado en el sistema";
+
+  const porcentajeDescuento = Number(
+    document.getElementById("role-discount")
+      ?.value
+  );
+
+  const horasGratis = Number(
+    document.getElementById("role-hours")
+      ?.value
+  );
+
+  const prioridadAcceso =
+    document.getElementById("role-priority")
+      ?.value || "Normal";
+
+  const exoneracionTotal =
+    document
+      .getElementById("role-exempt-toggle")
+      ?.classList.contains("on") || false;
+
+  if (!nombre) {
+    showToast(
+      "error",
+      "Ingresa un nombre para el rol",
+      "fa-triangle-exclamation"
+    );
+
+    return;
   }
-  closeModal('modal-role');
-  renderRoles();
+
+  if (
+    !Number.isFinite(porcentajeDescuento) ||
+    porcentajeDescuento < 0 ||
+    porcentajeDescuento > 100
+  ) {
+    showToast(
+      "error",
+      "El descuento debe estar entre 0 y 100",
+      "fa-triangle-exclamation"
+    );
+
+    return;
+  }
+
+  if (
+    !Number.isInteger(horasGratis) ||
+    horasGratis < 0
+  ) {
+    showToast(
+      "error",
+      "Las horas gratuitas deben ser un número entero no negativo",
+      "fa-triangle-exclamation"
+    );
+
+    return;
+  }
+
+  if (
+    estaEditando &&
+    (!rolActual || !rolActual.idRol)
+  ) {
+    showToast(
+      "error",
+      "No se encontró el identificador del rol",
+      "fa-triangle-exclamation"
+    );
+
+    return;
+  }
+
+  const url = estaEditando
+    ? `/api/v2/configuracion/roles/${rolActual.idRol}`
+    : "/api/v2/configuracion/roles";
+
+  const metodo =
+    estaEditando ? "PUT" : "POST";
+
+  try {
+    if (boton) {
+      boton.disabled = true;
+
+      boton.innerHTML = `
+        <i class="fa-solid fa-spinner fa-spin"></i>
+        ${
+          estaEditando
+            ? "Actualizando..."
+            : "Creando..."
+        }
+      `;
+    }
+
+    const respuesta = await fetch(url, {
+      method: metodo,
+
+      headers: {
+        "Content-Type": "application/json"
+      },
+
+      body: JSON.stringify({
+        nombre,
+        icono,
+        descripcion,
+        porcentajeDescuento,
+        horasGratis,
+        exoneracionTotal,
+        prioridadAcceso,
+        estado:
+          rolActual?.estado || "Activo"
+      })
+    });
+
+    const datos = await respuesta.json();
+
+    if (!respuesta.ok || !datos.ok) {
+      throw new Error(
+        datos.mensaje ||
+        (
+          estaEditando
+            ? "No se pudo actualizar el rol"
+            : "No se pudo crear el rol"
+        )
+      );
+    }
+
+    closeModal("modal-role");
+
+    await Promise.all([
+      cargarRolesReales(),
+      cargarVehiculosReales(),
+      cargarDashboardReal()
+    ]);
+
+    showToast(
+      "success",
+      datos.mensaje ||
+      (
+        estaEditando
+          ? "Rol actualizado correctamente"
+          : "Rol creado correctamente"
+      ),
+      "fa-circle-check"
+    );
+  } catch (error) {
+    console.error(
+      estaEditando
+        ? "Error al actualizar el rol:"
+        : "Error al crear el rol:",
+      error
+    );
+
+    showToast(
+      "error",
+      error.message ||
+      "No se pudo guardar el rol",
+      "fa-triangle-exclamation"
+    );
+  } finally {
+    if (boton) {
+      boton.disabled = false;
+
+      boton.innerHTML = `
+        <i class="fa-solid fa-check"></i>
+        ${
+          estaEditando
+            ? "Guardar Cambios"
+            : "Crear Rol"
+        }
+      `;
+    }
+  }
 }
-function deleteRole(i){
-  const name=rolesData[i].name;
-  rolesData.splice(i,1);
-  renderRoles();
-  showToast('warning','Rol eliminado: '+name,'fa-trash');
+
+async function cambiarEstadoRol(indice) {
+  const rol = rolesData[indice];
+
+  if (!rol || !rol.idRol) {
+    showToast(
+      "error",
+      "No se encontró el rol seleccionado",
+      "fa-triangle-exclamation"
+    );
+
+    return;
+  }
+
+  const nuevoEstado =
+    rol.estado === "Activo"
+      ? "Inactivo"
+      : "Activo";
+
+  const accion =
+    nuevoEstado === "Activo"
+      ? "reactivar"
+      : "desactivar";
+
+  const confirmado = window.confirm(
+    `¿Deseas ${accion} el rol "${rol.name}"?`
+  );
+
+  if (!confirmado) {
+    return;
+  }
+
+  try {
+    const respuesta = await fetch(
+      `/api/v2/configuracion/roles/${rol.idRol}/estado`,
+      {
+        method: "PATCH",
+
+        headers: {
+          "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+          estado: nuevoEstado
+        })
+      }
+    );
+
+    const datos = await respuesta.json();
+
+    if (!respuesta.ok || !datos.ok) {
+      throw new Error(
+        datos.mensaje ||
+        "No se pudo cambiar el estado del rol"
+      );
+    }
+
+    await Promise.all([
+      cargarRolesReales(),
+      cargarVehiculosReales(),
+      cargarDashboardReal()
+    ]);
+
+    showToast(
+      "success",
+      datos.mensaje ||
+      "Estado del rol actualizado",
+      "fa-circle-check"
+    );
+  } catch (error) {
+    console.error(
+      "Error al cambiar el estado del rol:",
+      error
+    );
+
+    showToast(
+      "error",
+      error.message ||
+      "No se pudo cambiar el estado del rol",
+      "fa-triangle-exclamation"
+    );
+  }
 }
 function savePromo(){
   const name=document.getElementById('promo-name').value.trim();
