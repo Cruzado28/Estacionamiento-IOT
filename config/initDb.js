@@ -5,7 +5,8 @@ const db = require("./db");
 
 /**
  * Divide el archivo SQL respetando los cambios de DELIMITER.
- * Esto permite ejecutar correctamente los triggers.
+ * Esto permite ejecutar correctamente los triggers que contienen
+ * varias instrucciones separadas por punto y coma.
  */
 function dividirSentenciasSQL(contenidoSQL) {
   const sentencias = [];
@@ -58,7 +59,7 @@ function dividirSentenciasSQL(contenidoSQL) {
 
 /**
  * Comprueba si las tablas y vistas principales
- * del nuevo sistema ya existen.
+ * del nuevo sistema ya se encuentran creadas.
  */
 async function esquemaNuevoCompleto(connection) {
   const objetosEsperados = [
@@ -106,8 +107,8 @@ async function esquemaNuevoCompleto(connection) {
 }
 
 /**
- * Crea el administrador inicial utilizando las
- * variables configuradas en Railway o en .env.
+ * Crea o actualiza el administrador inicial usando
+ * las variables configuradas en Railway o en el archivo .env.
  */
 async function asegurarAdministrador(connection) {
   const nombre = String(
@@ -116,7 +117,9 @@ async function asegurarAdministrador(connection) {
 
   const correo = String(
     process.env.ADMIN_EMAIL || ""
-  ).trim();
+  )
+    .trim()
+    .toLowerCase();
 
   const usuario = String(
     process.env.ADMIN_USER || ""
@@ -133,7 +136,7 @@ async function asegurarAdministrador(connection) {
     !contrasena
   ) {
     console.warn(
-      "Administrador inicial omitido: faltan variables ADMIN_NAME, ADMIN_EMAIL, ADMIN_USER o ADMIN_PASSWORD"
+      "Administrador inicial omitido: faltan las variables ADMIN_NAME, ADMIN_EMAIL, ADMIN_USER o ADMIN_PASSWORD"
     );
 
     return;
@@ -142,7 +145,9 @@ async function asegurarAdministrador(connection) {
   const [administradores] =
     await connection.query(
       `
-        SELECT id_admin
+        SELECT
+          id_admin,
+          contrasena_hash
         FROM administradores
         WHERE usuario = ?
         LIMIT 1
@@ -151,24 +156,61 @@ async function asegurarAdministrador(connection) {
     );
 
   if (administradores.length > 0) {
+    const administrador = administradores[0];
+
+    const contrasenaSinCambios =
+      await bcrypt.compare(
+        contrasena,
+        administrador.contrasena_hash
+      );
+
+    if (contrasenaSinCambios) {
+      await connection.query(
+        `
+          UPDATE administradores
+          SET
+            nombre = ?,
+            correo = ?,
+            estado = 'Activo'
+          WHERE id_admin = ?
+        `,
+        [
+          nombre,
+          correo,
+          administrador.id_admin
+        ]
+      );
+
+      console.log(
+        `Administrador ${usuario} verificado correctamente`
+      );
+
+      return;
+    }
+
+    const contrasenaHash =
+      await bcrypt.hash(contrasena, 12);
+
     await connection.query(
       `
         UPDATE administradores
         SET
           nombre = ?,
           correo = ?,
+          contrasena_hash = ?,
           estado = 'Activo'
         WHERE id_admin = ?
       `,
       [
         nombre,
         correo,
-        administradores[0].id_admin
+        contrasenaHash,
+        administrador.id_admin
       ]
     );
 
     console.log(
-      `Administrador ${usuario} verificado correctamente`
+      `Contraseña del administrador ${usuario} actualizada correctamente`
     );
 
     return;
@@ -188,7 +230,15 @@ async function asegurarAdministrador(connection) {
         color_principal,
         estado
       )
-      VALUES (?, ?, ?, ?, 'dark', '#4f8ef7', 'Activo')
+      VALUES (
+        ?,
+        ?,
+        ?,
+        ?,
+        'dark',
+        '#4f8ef7',
+        'Activo'
+      )
     `,
     [
       nombre,
@@ -203,6 +253,9 @@ async function asegurarAdministrador(connection) {
   );
 }
 
+/**
+ * Inicializa y verifica la base de datos.
+ */
 async function initDatabase() {
   const connection = await db.getConnection();
 
