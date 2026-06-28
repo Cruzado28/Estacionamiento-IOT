@@ -360,9 +360,8 @@ tbody tr:hover{background:var(--bg-hover)}
 .sublayout{display:flex;gap:16px}
 .sublayout-main{flex:1;min-width:0}
 .sublayout-side{width:300px;flex-shrink:0}
-/* Los módulos de roles, promociones y establecimientos aún son de consulta.
-   Sus botones permanecen ocultos hasta conectar sus operaciones con MySQL. */
-#tariffs-t3 button,
+/* El módulo de establecimientos continúa en modo consulta
+   hasta conectar sus operaciones con MySQL. */
 #tariffs-t4 button{display:none!important}
 
 #tarifa-guardar-btn{display:inline-flex!important}
@@ -1761,15 +1760,232 @@ tbody tr:hover{background:var(--bg-hover)}
 
 <div class="modal-overlay" id="modal-promo">
   <div class="modal">
-    <div class="modal-hd"><span class="modal-title" id="promo-modal-title">Nueva Promoción</span><div class="modal-close" onclick="closeModal('modal-promo')"><i class="fa-solid fa-xmark"></i></div></div>
-    <div class="modal-body">
-      <input type="hidden" id="promo-edit-index" value="-1"/>
-      <div class="form-group"><label class="form-label">Nombre de la promoción</label><input class="form-input" id="promo-name" placeholder="Promo Verano 2025"/></div>
-      <div class="form-row"><div class="form-group"><label class="form-label">Monto mínimo (S/)</label><input class="form-input" id="promo-min" type="number" placeholder="50"/></div><div class="form-group"><label class="form-label">Beneficio</label><input class="form-input" id="promo-benefit" placeholder="1 hora gratis"/></div></div>
-      <div class="form-row"><div class="form-group"><label class="form-label">Fecha inicio</label><input class="form-input" id="promo-from" type="date"/></div><div class="form-group"><label class="form-label">Fecha fin</label><input class="form-input" id="promo-to" type="date"/></div></div>
-      <div class="form-group"><label class="form-label">Estado</label><select class="form-select" id="promo-status"><option>Activa</option><option>Inactiva</option></select></div>
+    <div class="modal-hd">
+      <span
+        class="modal-title"
+        id="promo-modal-title"
+      >
+        Nueva Promoción
+      </span>
+
+      <div
+        class="modal-close"
+        onclick="closeModal('modal-promo')"
+      >
+        <i class="fa-solid fa-xmark"></i>
+      </div>
     </div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-promo')">Cancelar</button><button class="btn btn-primary" id="promo-save-btn" onclick="savePromo()"><i class="fa-solid fa-check"></i> Guardar</button></div>
+
+    <div class="modal-body">
+      <input
+        type="hidden"
+        id="promo-edit-index"
+        value="-1"
+      />
+
+      <div class="form-group">
+        <label class="form-label">
+          Nombre de la promoción *
+        </label>
+
+        <input
+          class="form-input"
+          id="promo-name"
+          placeholder="Ej: Promo Fin de Semana"
+          maxlength="120"
+        />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">
+            Monto mínimo de consumo (S/) *
+          </label>
+
+          <input
+            class="form-input"
+            id="promo-min"
+            type="number"
+            min="0"
+            step="0.01"
+            value="0"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">
+            Tipo de beneficio *
+          </label>
+
+          <select
+            class="form-select"
+            id="promo-type"
+            onchange="actualizarCampoValorPromocion()"
+          >
+            <option value="Porcentaje">
+              Porcentaje de descuento
+            </option>
+
+            <option value="Horas gratis">
+              Horas gratis
+            </option>
+
+            <option value="Minutos gratis">
+              Minutos gratis
+            </option>
+
+            <option value="Monto fijo">
+              Descuento de monto fijo
+            </option>
+
+            <option value="Exoneracion total">
+              Exoneración total
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label
+            class="form-label"
+            id="promo-value-label"
+          >
+            Valor del beneficio *
+          </label>
+
+          <input
+            class="form-input"
+            id="promo-value"
+            type="number"
+            min="0"
+            step="0.01"
+            value="10"
+          />
+
+          <div
+            id="promo-value-help"
+            style="
+              font-size:10px;
+              color:var(--text-muted);
+              margin-top:5px;
+            "
+          >
+            Ingresa el porcentaje de descuento.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">
+            Límite de usos
+          </label>
+
+          <input
+            class="form-input"
+            id="promo-limit"
+            type="number"
+            min="1"
+            step="1"
+            placeholder="Sin límite"
+          />
+
+          <div
+            style="
+              font-size:10px;
+              color:var(--text-muted);
+              margin-top:5px;
+            "
+          >
+            Déjalo vacío para permitir usos ilimitados.
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">
+          Descripción del beneficio
+        </label>
+
+        <input
+          class="form-input"
+          id="promo-benefit"
+          maxlength="255"
+          placeholder="Se generará automáticamente si se deja vacío"
+        />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">
+            Fecha de inicio *
+          </label>
+
+          <input
+            class="form-input"
+            id="promo-from"
+            type="date"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">
+            Fecha de fin *
+          </label>
+
+          <input
+            class="form-input"
+            id="promo-to"
+            type="date"
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">
+          Estado
+        </label>
+
+        <select
+          class="form-select"
+          id="promo-status"
+        >
+          <option value="Activa">Activa</option>
+          <option value="Inactiva">Inactiva</option>
+          <option value="Vencida">Vencida</option>
+        </select>
+      </div>
+
+      <div
+        id="promo-form-error"
+        style="
+          display:none;
+          margin-top:10px;
+          padding:9px 11px;
+          border-radius:var(--radius-sm);
+          background:var(--red-bg);
+          color:var(--red);
+          font-size:11px;
+        "
+      ></div>
+    </div>
+
+    <div class="modal-footer">
+      <button
+        class="btn btn-ghost"
+        onclick="closeModal('modal-promo')"
+      >
+        Cancelar
+      </button>
+
+      <button
+        class="btn btn-primary"
+        id="promo-save-btn"
+        onclick="savePromo()"
+      >
+        <i class="fa-solid fa-check"></i>
+        Guardar
+      </button>
+    </div>
   </div>
 </div>
 
@@ -6942,31 +7158,235 @@ function describirBeneficioPromocion(promocion) {
   }
 }
 
-function renderPromos(){
-  const el=document.getElementById('promos-list');
-  if(!el)return;
-  el.innerHTML=promosData.map((p,i)=>`
-    <div class="promo-card">
-      <div style="width:36px;height:36px;border-radius:var(--radius-sm);background:var(--amber-bg);display:flex;align-items:center;justify-content:center;color:var(--amber)"><i class="fa-solid fa-gift" style="font-size:17px"></i></div>
-      <div style="flex:1">
-        <div style="font-size:13px;font-weight:600">${p.name}</div>
-        <div style="font-size:11px;color:var(--text-secondary)">Consumo ≥ ${p.min} → ${p.benefit}</div>
-        <div style="font-size:10px;color:var(--text-muted)">${p.from} al ${p.to}</div>
-      </div>
-      <span class="badge ${p.status==="Activa"?"badge-green":p.status==="Vencida"?"badge-red":"badge-gray"}">${p.status}</span>
-      <div style="display:flex;gap:4px;margin-left:4px">
-        <button class="btn btn-ghost btn-sm" onclick="togglePromo(${i})" title="${p.status==='Activa'?'Desactivar':'Activar'}"><i class="fa-solid fa-${p.status==='Activa'?'pause':'play'}"></i></button>
-        <button class="btn btn-ghost btn-sm" onclick="openPromoModal(${i})" title="Editar promoción"><i class="fa-solid fa-pen"></i></button>
-        <button class="btn btn-danger btn-sm" onclick="deletePromo(${i})" title="Eliminar promoción"><i class="fa-solid fa-trash"></i></button>
-      </div>
-    </div>
-  `).join('');
+function escaparHtmlPromocion(valor) {
+  return String(valor ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
-function togglePromo(i){
-  promosData[i].status=promosData[i].status==='Activa'?'Inactiva':'Activa';
-  renderPromos();
-  showToast('info',`Promoción ${promosData[i].status.toLowerCase()}`,'fa-tag');
+function renderPromos() {
+  const contenedor =
+    document.getElementById("promos-list");
+
+  if (!contenedor) {
+    return;
+  }
+
+  if (promosData.length === 0) {
+    contenedor.innerHTML = `
+      <div
+        class="empty-state"
+        style="
+          padding:28px;
+          background:var(--bg-card);
+          border:1px solid var(--border);
+          border-radius:var(--radius-md);
+        "
+      >
+        <i class="fa-solid fa-tags"></i>
+
+        <div style="font-size:12px">
+          No existen promociones registradas.
+        </div>
+      </div>
+    `;
+
+    return;
+  }
+
+  contenedor.innerHTML = promosData.map(
+    (promocion, indice) => {
+      const activa =
+        promocion.status === "Activa";
+
+      const claseEstado =
+        activa
+          ? "badge-green"
+          : promocion.status === "Vencida"
+            ? "badge-red"
+            : "badge-gray";
+
+      const limiteTexto =
+        promocion.limiteUsos === null ||
+        promocion.limiteUsos === undefined
+          ? "Sin límite de usos"
+          : `${promocion.usosRealizados || 0} de ` +
+            `${promocion.limiteUsos} usos`;
+
+      return `
+        <div class="promo-card">
+          <div
+            style="
+              width:36px;
+              height:36px;
+              border-radius:var(--radius-sm);
+              background:var(--amber-bg);
+              display:flex;
+              align-items:center;
+              justify-content:center;
+              color:var(--amber);
+              flex-shrink:0;
+            "
+          >
+            <i
+              class="fa-solid fa-gift"
+              style="font-size:17px"
+            ></i>
+          </div>
+
+          <div style="flex:1;min-width:0">
+            <div
+              style="
+                font-size:13px;
+                font-weight:600;
+              "
+            >
+              ${escaparHtmlPromocion(promocion.name)}
+            </div>
+
+            <div
+              style="
+                font-size:11px;
+                color:var(--text-secondary);
+              "
+            >
+              Consumo mínimo ${escaparHtmlPromocion(promocion.min)}
+              →
+              ${escaparHtmlPromocion(promocion.benefit)}
+            </div>
+
+            <div
+              style="
+                font-size:10px;
+                color:var(--text-muted);
+                margin-top:2px;
+              "
+            >
+              ${escaparHtmlPromocion(promocion.from)}
+              al
+              ${escaparHtmlPromocion(promocion.to)}
+              ·
+              ${escaparHtmlPromocion(limiteTexto)}
+            </div>
+          </div>
+
+          <span class="badge ${claseEstado}">
+            ${escaparHtmlPromocion(promocion.status)}
+          </span>
+
+          <div
+            style="
+              display:flex;
+              gap:4px;
+              margin-left:4px;
+            "
+          >
+            <button
+              class="btn btn-ghost btn-sm"
+              onclick="togglePromo(${indice})"
+              title="${
+                activa
+                  ? "Desactivar promoción"
+                  : "Activar promoción"
+              }"
+            >
+              <i
+                class="fa-solid fa-${
+                  activa ? "pause" : "play"
+                }"
+              ></i>
+            </button>
+
+            <button
+              class="btn btn-ghost btn-sm"
+              onclick="openPromoModal(${indice})"
+              title="Editar promoción"
+            >
+              <i class="fa-solid fa-pen"></i>
+            </button>
+          </div>
+        </div>
+      `;
+    }
+  ).join("");
+}
+
+async function togglePromo(indice) {
+  const promocion = promosData[indice];
+
+  if (!promocion) {
+    return;
+  }
+
+  const nuevoEstado =
+    promocion.status === "Activa"
+      ? "Inactiva"
+      : "Activa";
+
+  const accion =
+    nuevoEstado === "Activa"
+      ? "activar"
+      : "desactivar";
+
+  const confirmado = window.confirm(
+    `¿Deseas ${accion} la promoción ` +
+    `"${promocion.name}"?`
+  );
+
+  if (!confirmado) {
+    return;
+  }
+
+  try {
+    const respuesta = await fetch(
+      `/api/v2/configuracion/promociones/` +
+      `${promocion.idPromocion}/estado`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          estado: nuevoEstado
+        })
+      }
+    );
+
+    const datos = await respuesta.json();
+
+    if (!respuesta.ok || !datos.ok) {
+      throw new Error(
+        datos.mensaje ||
+        "No se pudo cambiar el estado de la promoción"
+      );
+    }
+
+    await cargarPromocionesReales();
+    await cargarRankingsReales();
+
+    showToast(
+      "success",
+      datos.mensaje,
+      nuevoEstado === "Activa"
+        ? "fa-circle-play"
+        : "fa-circle-pause"
+    );
+  } catch (error) {
+    console.error(
+      "Error al cambiar el estado de la promoción:",
+      error
+    );
+
+    showToast(
+      "error",
+      error.message ||
+      "No se pudo cambiar el estado de la promoción",
+      "fa-triangle-exclamation"
+    );
+  }
 }
 
 async function cargarEstablecimientosReales() {
@@ -7314,29 +7734,242 @@ function openVehicleModal(idVehiculo = null) {
   }, 100);
 }
 
-function openPromoModal(editIndex){
-  const isEdit=editIndex!==undefined&&editIndex>=0;
-  document.getElementById('promo-edit-index').value=isEdit?editIndex:-1;
-  document.getElementById('promo-modal-title').textContent=isEdit?'Editar Promoción':'Nueva Promoción';
-  document.getElementById('promo-save-btn').innerHTML=`<i class="fa-solid fa-check"></i> ${isEdit?'Guardar Cambios':'Guardar'}`;
-  if(isEdit){
-    const p=promosData[editIndex];
-    document.getElementById('promo-name').value=p.name;
-    document.getElementById('promo-min').value=parseFloat((p.min||'').replace('S/','').trim())||'';
-    document.getElementById('promo-benefit').value=p.benefit;
-    document.getElementById('promo-from').value=p.from;
-    document.getElementById('promo-to').value=p.to;
-    document.getElementById('promo-status').value=p.status;
-  } else {
-    document.getElementById('promo-name').value='';
-    document.getElementById('promo-min').value='';
-    document.getElementById('promo-benefit').value='';
-    document.getElementById('promo-from').value='';
-    document.getElementById('promo-to').value='';
-    document.getElementById('promo-status').selectedIndex=0;
+function actualizarCampoValorPromocion() {
+  const tipo =
+    document.getElementById("promo-type")
+      ?.value || "Porcentaje";
+
+  const campoValor =
+    document.getElementById("promo-value");
+
+  const etiqueta =
+    document.getElementById(
+      "promo-value-label"
+    );
+
+  const ayuda =
+    document.getElementById(
+      "promo-value-help"
+    );
+
+  const configuraciones = {
+    Porcentaje: {
+      etiqueta: "Porcentaje de descuento (%) *",
+      ayuda:
+        "Ingresa un valor entre 1 y 100.",
+      paso: "0.01",
+      maximo: "100"
+    },
+
+    "Horas gratis": {
+      etiqueta: "Cantidad de horas gratis *",
+      ayuda:
+        "Ingresa la cantidad de horas que serán gratuitas.",
+      paso: "0.01",
+      maximo: ""
+    },
+
+    "Minutos gratis": {
+      etiqueta: "Cantidad de minutos gratis *",
+      ayuda:
+        "Ingresa la cantidad de minutos que serán gratuitos.",
+      paso: "1",
+      maximo: ""
+    },
+
+    "Monto fijo": {
+      etiqueta: "Monto de descuento (S/) *",
+      ayuda:
+        "Ingresa el monto fijo que se descontará.",
+      paso: "0.01",
+      maximo: ""
+    },
+
+    "Exoneracion total": {
+      etiqueta: "Valor del beneficio",
+      ayuda:
+        "La exoneración total no requiere un valor adicional.",
+      paso: "1",
+      maximo: ""
+    }
+  };
+
+  const configuracion =
+    configuraciones[tipo] ||
+    configuraciones.Porcentaje;
+
+  if (etiqueta) {
+    etiqueta.textContent =
+      configuracion.etiqueta;
   }
-  document.getElementById('modal-promo').classList.add('open');
+
+  if (ayuda) {
+    ayuda.textContent =
+      configuracion.ayuda;
+  }
+
+  if (campoValor) {
+    campoValor.step =
+      configuracion.paso;
+
+    if (configuracion.maximo) {
+      campoValor.max =
+        configuracion.maximo;
+    } else {
+      campoValor.removeAttribute("max");
+    }
+
+    const esExoneracion =
+      tipo === "Exoneracion total";
+
+    campoValor.disabled =
+      esExoneracion;
+
+    if (esExoneracion) {
+      campoValor.value = "0";
+    } else if (
+      !campoValor.value ||
+      Number(campoValor.value) <= 0
+    ) {
+      campoValor.value =
+        tipo === "Minutos gratis"
+          ? "30"
+          : "10";
+    }
+  }
 }
+
+function openPromoModal(editIndex) {
+  const estaEditando =
+    editIndex !== undefined &&
+    editIndex >= 0;
+
+  const promocion =
+    estaEditando
+      ? promosData[editIndex]
+      : null;
+
+  const campoIndice =
+    document.getElementById(
+      "promo-edit-index"
+    );
+
+  const titulo =
+    document.getElementById(
+      "promo-modal-title"
+    );
+
+  const boton =
+    document.getElementById(
+      "promo-save-btn"
+    );
+
+  const error =
+    document.getElementById(
+      "promo-form-error"
+    );
+
+  if (campoIndice) {
+    campoIndice.value =
+      estaEditando
+        ? editIndex
+        : -1;
+  }
+
+  if (titulo) {
+    titulo.textContent =
+      estaEditando
+        ? "Editar Promoción"
+        : "Nueva Promoción";
+  }
+
+  if (boton) {
+    boton.innerHTML = `
+      <i class="fa-solid fa-check"></i>
+      ${
+        estaEditando
+          ? "Guardar Cambios"
+          : "Crear Promoción"
+      }
+    `;
+  }
+
+  if (error) {
+    error.textContent = "";
+    error.style.display = "none";
+  }
+
+  document.getElementById(
+    "promo-name"
+  ).value =
+    promocion?.name || "";
+
+  document.getElementById(
+    "promo-min"
+  ).value =
+    promocion
+      ? Number(
+          String(promocion.min)
+            .replace("S/", "")
+            .trim()
+        )
+      : "0";
+
+  document.getElementById(
+    "promo-type"
+  ).value =
+    promocion?.tipoBeneficio ||
+    "Porcentaje";
+
+  document.getElementById(
+    "promo-value"
+  ).value =
+    promocion
+      ? Number(
+          promocion.valorBeneficio
+        )
+      : "10";
+
+  document.getElementById(
+    "promo-benefit"
+  ).value =
+    promocion?.benefit || "";
+
+  document.getElementById(
+    "promo-limit"
+  ).value =
+    promocion?.limiteUsos ??
+    "";
+
+  document.getElementById(
+    "promo-from"
+  ).value =
+    promocion?.from || "";
+
+  document.getElementById(
+    "promo-to"
+  ).value =
+    promocion?.to || "";
+
+  document.getElementById(
+    "promo-status"
+  ).value =
+    promocion?.status ||
+    "Activa";
+
+  actualizarCampoValorPromocion();
+
+  document
+    .getElementById("modal-promo")
+    .classList.add("open");
+
+  setTimeout(() => {
+    document
+      .getElementById("promo-name")
+      ?.focus();
+  }, 100);
+}
+
 function openStoreModal(editIndex){
   const isEdit=editIndex!==undefined&&editIndex>=0;
   document.getElementById('store-edit-index').value=isEdit?editIndex:-1;
@@ -8027,31 +8660,287 @@ async function cambiarEstadoRol(indice) {
     );
   }
 }
-function savePromo(){
-  const name=document.getElementById('promo-name').value.trim();
-  if(!name){showToast('error','Ingresa un nombre para la promoción','fa-xmark');return;}
-  const min=document.getElementById('promo-min').value;
-  const benefit=document.getElementById('promo-benefit').value.trim()||'Sin especificar';
-  const from=document.getElementById('promo-from').value;
-  const to=document.getElementById('promo-to').value;
-  const status=document.getElementById('promo-status').value;
-  const editIndex=parseInt(document.getElementById('promo-edit-index').value);
-  const promoObj={name:name,min:'S/ '+(min||'0'),benefit:benefit,from:from||'—',to:to||'—',status:status};
-  if(editIndex>=0){
-    promosData[editIndex]=promoObj;
-    showToast('success',`Promoción "${name}" actualizada`,'fa-check');
-  } else {
-    promosData.push(promoObj);
-    showToast('success',`Promoción "${name}" creada exitosamente`,'fa-check');
+async function savePromo() {
+  const boton =
+    document.getElementById(
+      "promo-save-btn"
+    );
+
+  const contenedorError =
+    document.getElementById(
+      "promo-form-error"
+    );
+
+  const editIndex = Number(
+    document.getElementById(
+      "promo-edit-index"
+    )?.value || -1
+  );
+
+  const estaEditando =
+    Number.isInteger(editIndex) &&
+    editIndex >= 0 &&
+    Boolean(promosData[editIndex]);
+
+  const promocionActual =
+    estaEditando
+      ? promosData[editIndex]
+      : null;
+
+  const nombre =
+    document
+      .getElementById("promo-name")
+      ?.value.trim() || "";
+
+  const montoMinimo = Number(
+    document.getElementById(
+      "promo-min"
+    )?.value
+  );
+
+  const tipoBeneficio =
+    document.getElementById(
+      "promo-type"
+    )?.value || "";
+
+  const valorBeneficio =
+    tipoBeneficio ===
+    "Exoneracion total"
+      ? 0
+      : Number(
+          document.getElementById(
+            "promo-value"
+          )?.value
+        );
+
+  const beneficioDescripcion =
+    document
+      .getElementById(
+        "promo-benefit"
+      )
+      ?.value.trim() || "";
+
+  const fechaInicio =
+    document.getElementById(
+      "promo-from"
+    )?.value || "";
+
+  const fechaFin =
+    document.getElementById(
+      "promo-to"
+    )?.value || "";
+
+  const estado =
+    document.getElementById(
+      "promo-status"
+    )?.value || "Activa";
+
+  const limiteTexto =
+    document.getElementById(
+      "promo-limit"
+    )?.value.trim() || "";
+
+  const limiteUsos =
+    limiteTexto === ""
+      ? null
+      : Number(limiteTexto);
+
+  function mostrarErrorPromocion(
+    mensaje
+  ) {
+    if (contenedorError) {
+      contenedorError.textContent =
+        mensaje;
+
+      contenedorError.style.display =
+        "block";
+    }
+
+    showToast(
+      "error",
+      mensaje,
+      "fa-triangle-exclamation"
+    );
   }
-  closeModal('modal-promo');
-  renderPromos();
-}
-function deletePromo(i){
-  const name=promosData[i].name;
-  promosData.splice(i,1);
-  renderPromos();
-  showToast('warning','Promoción eliminada: '+name,'fa-trash');
+
+  if (contenedorError) {
+    contenedorError.textContent = "";
+    contenedorError.style.display =
+      "none";
+  }
+
+  if (!nombre) {
+    mostrarErrorPromocion(
+      "Ingresa el nombre de la promoción"
+    );
+    return;
+  }
+
+  if (
+    !Number.isFinite(montoMinimo) ||
+    montoMinimo < 0
+  ) {
+    mostrarErrorPromocion(
+      "Ingresa un monto mínimo válido"
+    );
+    return;
+  }
+
+  if (
+    tipoBeneficio !==
+      "Exoneracion total" &&
+    (
+      !Number.isFinite(
+        valorBeneficio
+      ) ||
+      valorBeneficio <= 0
+    )
+  ) {
+    mostrarErrorPromocion(
+      "Ingresa un valor de beneficio mayor que cero"
+    );
+    return;
+  }
+
+  if (
+    tipoBeneficio ===
+      "Porcentaje" &&
+    valorBeneficio > 100
+  ) {
+    mostrarErrorPromocion(
+      "El porcentaje no puede ser mayor que 100"
+    );
+    return;
+  }
+
+  if (!fechaInicio || !fechaFin) {
+    mostrarErrorPromocion(
+      "Selecciona las fechas de inicio y fin"
+    );
+    return;
+  }
+
+  if (fechaFin < fechaInicio) {
+    mostrarErrorPromocion(
+      "La fecha final no puede ser anterior a la fecha inicial"
+    );
+    return;
+  }
+
+  if (
+    limiteUsos !== null &&
+    (
+      !Number.isInteger(limiteUsos) ||
+      limiteUsos <= 0
+    )
+  ) {
+    mostrarErrorPromocion(
+      "El límite de usos debe ser un número entero mayor que cero"
+    );
+    return;
+  }
+
+  const cuerpo = {
+    nombre,
+    montoMinimo,
+    tipoBeneficio,
+    valorBeneficio,
+    beneficioDescripcion,
+    fechaInicio,
+    fechaFin,
+    estado,
+    limiteUsos
+  };
+
+  const url = estaEditando
+    ? `/api/v2/configuracion/promociones/` +
+      `${promocionActual.idPromocion}`
+    : "/api/v2/configuracion/promociones";
+
+  const metodo =
+    estaEditando
+      ? "PUT"
+      : "POST";
+
+  try {
+    if (boton) {
+      boton.disabled = true;
+
+      boton.innerHTML = `
+        <i class="fa-solid fa-spinner fa-spin"></i>
+        ${
+          estaEditando
+            ? "Actualizando..."
+            : "Guardando..."
+        }
+      `;
+    }
+
+    const respuesta = await fetch(
+      url,
+      {
+        method: metodo,
+        headers: {
+          "Content-Type":
+            "application/json"
+        },
+        body: JSON.stringify(cuerpo)
+      }
+    );
+
+    const datos =
+      await respuesta.json();
+
+    if (
+      !respuesta.ok ||
+      !datos.ok
+    ) {
+      throw new Error(
+        datos.mensaje ||
+        (
+          estaEditando
+            ? "No se pudo actualizar la promoción"
+            : "No se pudo crear la promoción"
+        )
+      );
+    }
+
+    closeModal("modal-promo");
+
+    await cargarPromocionesReales();
+    await cargarRankingsReales();
+
+    showToast(
+      "success",
+      datos.mensaje,
+      "fa-circle-check"
+    );
+  } catch (error) {
+    console.error(
+      estaEditando
+        ? "Error al actualizar la promoción:"
+        : "Error al crear la promoción:",
+      error
+    );
+
+    mostrarErrorPromocion(
+      error.message ||
+      "No se pudo guardar la promoción"
+    );
+  } finally {
+    if (boton) {
+      boton.disabled = false;
+
+      boton.innerHTML = `
+        <i class="fa-solid fa-check"></i>
+        ${
+          estaEditando
+            ? "Guardar Cambios"
+            : "Crear Promoción"
+        }
+      `;
+    }
+  }
 }
 
 // Close modals on overlay click
