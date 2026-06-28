@@ -3257,8 +3257,53 @@ function renderVehiclesTable(data){
       <td>
         <div style="display:flex;gap:4px">
           <button class="btn btn-ghost btn-sm" onclick="openDetailPanel(${JSON.stringify(v).replace(/"/g,"'")})" title="Ver detalle"><i class="fa-solid fa-eye"></i></button>
-          <button class="btn btn-ghost btn-sm" onclick="openVehicleModal(${v.id})" title="Editar"><i class="fa-solid fa-pen"></i></button>
-          <button class="btn btn-danger btn-sm" onclick="deleteVehicle(${v.id}, '${v.plate}')" title="Desactivar vehículo"><i class="fa-solid fa-trash"></i></button>
+        ${v.status === "Activo"
+          ? `
+            <button
+              class="btn btn-ghost btn-sm"
+              onclick="openVehicleModal(${v.id})"
+              title="Editar"
+            >
+              <i class="fa-solid fa-pen"></i>
+            </button>
+          `
+          : `
+            <button
+              class="btn btn-ghost btn-sm"
+              disabled
+              title="El vehículo está inactivo"
+              style="opacity: 0.35; cursor: not-allowed;"
+            >
+              <i class="fa-solid fa-pen"></i>
+            </button>
+          `
+      }
+${
+  v.status === "Activo"
+    ? `
+      <button
+        class="btn btn-danger btn-sm"
+        onclick="deleteVehicle(${v.id}, '${v.plate}')"
+        title="Desactivar vehículo"
+      >
+        <i class="fa-solid fa-trash"></i>
+      </button>
+    `
+    : `
+      <button
+        class="btn btn-ghost btn-sm"
+        onclick="reactivateVehicle(${v.id}, '${v.plate}')"
+        title="Reactivar vehículo"
+        style="
+          color: #22c55e;
+          border-color: rgba(34, 197, 94, 0.35);
+          background: rgba(34, 197, 94, 0.10);
+        "
+      >
+        <i class="fa-solid fa-rotate-left"></i>
+      </button>
+    `
+}        
         </div>
       </td>
     </tr>
@@ -3324,6 +3369,57 @@ async function deleteVehicle(idVehiculo, placa) {
       "error",
       error.message ||
       "No se pudo desactivar el vehículo",
+      "fa-triangle-exclamation"
+    );
+  }
+}
+
+async function reactivateVehicle(idVehiculo, placa) {
+  const confirmado = window.confirm(
+    `¿Deseas reactivar el vehículo ${placa}?\n\n` +
+    "El vehículo y su última tarjeta RFID volverán a estar activos."
+  );
+
+  if (!confirmado) {
+    return;
+  }
+
+  try {
+    const respuesta = await fetch(
+      `/api/v2/vehiculos/${idVehiculo}/reactivar`,
+      {
+        method: "PATCH"
+      }
+    );
+
+    const datos = await respuesta.json();
+
+    if (!respuesta.ok || !datos.ok) {
+      throw new Error(
+        datos.mensaje ||
+        "No se pudo reactivar el vehículo"
+      );
+    }
+
+    await cargarVehiculosReales();
+    await cargarDashboardReal();
+
+    showToast(
+      "success",
+      datos.mensaje ||
+      `Vehículo ${placa} reactivado correctamente`,
+      "fa-circle-check"
+    );
+  } catch (error) {
+    console.error(
+      "Error al reactivar el vehículo:",
+      error
+    );
+
+    showToast(
+      "error",
+      error.message ||
+      "No se pudo reactivar el vehículo",
       "fa-triangle-exclamation"
     );
   }

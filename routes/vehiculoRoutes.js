@@ -987,6 +987,142 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+// ============================================================
+// PATCH /api/v2/vehiculos/:id/reactivar
+// Reactiva un vehículo y su última tarjeta RFID
+// ============================================================
+router.patch("/:id/reactivar", async (req, res) => {
+  let conexion;
+
+  try {
+    const idVehiculo = Number(req.params.id);
+
+    if (
+      !Number.isInteger(idVehiculo) ||
+      idVehiculo <= 0
+    ) {
+      return res.status(400).json({
+        ok: false,
+        mensaje:
+          "El identificador del vehículo no es válido"
+      });
+    }
+
+    conexion = await db.getConnection();
+
+    await conexion.beginTransaction();
+
+    const [vehiculos] = await conexion.query(
+      `
+        SELECT
+          id_vehiculo,
+          placa,
+          estado
+        FROM vehiculos
+        WHERE id_vehiculo = ?
+        LIMIT 1
+        FOR UPDATE
+      `,
+      [idVehiculo]
+    );
+
+    if (vehiculos.length === 0) {
+      await conexion.rollback();
+
+      return res.status(404).json({
+        ok: false,
+        mensaje: "Vehículo no encontrado"
+      });
+    }
+
+    const vehiculo = vehiculos[0];
+
+    if (vehiculo.estado === "Activo") {
+      await conexion.rollback();
+
+      return res.status(409).json({
+        ok: false,
+        mensaje:
+          `El vehículo ${vehiculo.placa} ya se encuentra activo`
+      });
+    }
+
+    await conexion.query(
+      `
+        UPDATE vehiculos
+        SET estado = 'Activo'
+        WHERE id_vehiculo = ?
+      `,
+      [idVehiculo]
+    );
+
+    const [tarjetas] = await conexion.query(
+      `
+        SELECT id_tarjeta
+        FROM tarjetas_rfid
+        WHERE vehiculo_id = ?
+        ORDER BY id_tarjeta DESC
+        LIMIT 1
+        FOR UPDATE
+      `,
+      [idVehiculo]
+    );
+
+    if (tarjetas.length > 0) {
+      await conexion.query(
+        `
+          UPDATE tarjetas_rfid
+          SET estado = 'Inactiva'
+          WHERE vehiculo_id = ?
+        `,
+        [idVehiculo]
+      );
+
+      await conexion.query(
+        `
+          UPDATE tarjetas_rfid
+          SET estado = 'Activa'
+          WHERE id_tarjeta = ?
+        `,
+        [tarjetas[0].id_tarjeta]
+      );
+    }
+
+    await conexion.commit();
+
+    return res.json({
+      ok: true,
+      mensaje:
+        `Vehículo ${vehiculo.placa} reactivado correctamente`,
+
+      vehiculo: {
+        idVehiculo,
+        placa: vehiculo.placa,
+        estado: "Activo"
+      }
+    });
+  } catch (error) {
+    if (conexion) {
+      await conexion.rollback();
+    }
+
+    console.error(
+      "Error al reactivar el vehículo:",
+      error
+    );
+
+    return res.status(500).json({
+      ok: false,
+      mensaje:
+        "Error al reactivar el vehículo"
+    });
+  } finally {
+    if (conexion) {
+      conexion.release();
+    }
+  }
+});
+
 /**
  * GET /api/v2/vehiculos/:id
  * Devuelve el detalle de un vehículo específico.
