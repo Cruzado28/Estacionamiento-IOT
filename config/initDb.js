@@ -1,14 +1,15 @@
 const fs = require("fs");
 const path = require("path");
+const bcrypt = require("bcryptjs");
 const db = require("./db");
 
 /**
  * Divide el archivo SQL respetando los cambios de DELIMITER.
- * Esto permite ejecutar correctamente los triggers que contienen
- * varias instrucciones separadas por punto y coma.
+ * Esto permite ejecutar correctamente los triggers.
  */
 function dividirSentenciasSQL(contenidoSQL) {
   const sentencias = [];
+
   const lineas = contenidoSQL
     .replace(/^\uFEFF/, "")
     .split(/\r?\n/);
@@ -30,7 +31,11 @@ function dividirSentenciasSQL(contenidoSQL) {
 
     acumulado += `${lineaOriginal}\n`;
 
-    if (acumulado.trimEnd().endsWith(delimitador)) {
+    if (
+      acumulado
+        .trimEnd()
+        .endsWith(delimitador)
+    ) {
       const sentencia = acumulado
         .trimEnd()
         .slice(0, -delimitador.length)
@@ -52,8 +57,8 @@ function dividirSentenciasSQL(contenidoSQL) {
 }
 
 /**
- * Comprueba si las tablas y vistas principales del nuevo
- * sistema ya se encuentran creadas.
+ * Comprueba si las tablas y vistas principales
+ * del nuevo sistema ya existen.
  */
 async function esquemaNuevoCompleto(connection) {
   const objetosEsperados = [
@@ -95,7 +100,106 @@ async function esquemaNuevoCompleto(connection) {
   );
 
   return (
-    Number(resultado[0].total) === objetosEsperados.length
+    Number(resultado[0].total) ===
+    objetosEsperados.length
+  );
+}
+
+/**
+ * Crea el administrador inicial utilizando las
+ * variables configuradas en Railway o en .env.
+ */
+async function asegurarAdministrador(connection) {
+  const nombre = String(
+    process.env.ADMIN_NAME || ""
+  ).trim();
+
+  const correo = String(
+    process.env.ADMIN_EMAIL || ""
+  ).trim();
+
+  const usuario = String(
+    process.env.ADMIN_USER || ""
+  ).trim();
+
+  const contrasena = String(
+    process.env.ADMIN_PASSWORD || ""
+  );
+
+  if (
+    !nombre ||
+    !correo ||
+    !usuario ||
+    !contrasena
+  ) {
+    console.warn(
+      "Administrador inicial omitido: faltan variables ADMIN_NAME, ADMIN_EMAIL, ADMIN_USER o ADMIN_PASSWORD"
+    );
+
+    return;
+  }
+
+  const [administradores] =
+    await connection.query(
+      `
+        SELECT id_admin
+        FROM administradores
+        WHERE usuario = ?
+        LIMIT 1
+      `,
+      [usuario]
+    );
+
+  if (administradores.length > 0) {
+    await connection.query(
+      `
+        UPDATE administradores
+        SET
+          nombre = ?,
+          correo = ?,
+          estado = 'Activo'
+        WHERE id_admin = ?
+      `,
+      [
+        nombre,
+        correo,
+        administradores[0].id_admin
+      ]
+    );
+
+    console.log(
+      `Administrador ${usuario} verificado correctamente`
+    );
+
+    return;
+  }
+
+  const contrasenaHash =
+    await bcrypt.hash(contrasena, 12);
+
+  await connection.query(
+    `
+      INSERT INTO administradores (
+        nombre,
+        correo,
+        usuario,
+        contrasena_hash,
+        tema_preferido,
+        color_principal,
+        estado
+      )
+      VALUES (?, ?, ?, ?, 'dark', '#4f8ef7', 'Activo')
+    `,
+    [
+      nombre,
+      correo,
+      usuario,
+      contrasenaHash
+    ]
+  );
+
+  console.log(
+    `Administrador ${usuario} creado correctamente`
   );
 }
 
@@ -103,54 +207,63 @@ async function initDatabase() {
   const connection = await db.getConnection();
 
   try {
-    const esquemaCompleto = await esquemaNuevoCompleto(
-      connection
-    );
+    const esquemaCompleto =
+      await esquemaNuevoCompleto(connection);
 
     if (esquemaCompleto) {
       console.log(
         "Esquema Smart Parking IoT verificado correctamente"
       );
-      return;
-    }
+    } else {
+      const rutaEsquema = path.join(
+        __dirname,
+        "..",
+        "database",
+        "schema_corregido.sql"
+      );
 
-    const rutaEsquema = path.join(
-      __dirname,
-      "..",
-      "database",
-      "schema_corregido.sql"
-    );
+      if (!fs.existsSync(rutaEsquema)) {
+        throw new Error(
+          `No se encontró el archivo SQL: ${rutaEsquema}`
+        );
+      }
 
-    if (!fs.existsSync(rutaEsquema)) {
-      throw new Error(
-        `No se encontró el archivo SQL: ${rutaEsquema}`
+      const contenidoSQL = fs.readFileSync(
+        rutaEsquema,
+        "utf8"
+      );
+
+      const sentencias =
+        dividirSentenciasSQL(contenidoSQL);
+
+      console.log(
+        `Inicializando Smart Parking IoT con ${sentencias.length} instrucciones...`
+      );
+
+      for (
+        let indice = 0;
+        indice < sentencias.length;
+        indice += 1
+      ) {
+        try {
+          await connection.query(
+            sentencias[indice]
+          );
+        } catch (error) {
+          throw new Error(
+            `Error en la instrucción SQL ${
+              indice + 1
+            }: ${error.message}`
+          );
+        }
+      }
+
+      console.log(
+        "Base de datos Smart Parking IoT inicializada correctamente"
       );
     }
 
-    const contenidoSQL = fs.readFileSync(
-      rutaEsquema,
-      "utf8"
-    );
-
-    const sentencias = dividirSentenciasSQL(contenidoSQL);
-
-    console.log(
-      `Inicializando Smart Parking IoT con ${sentencias.length} instrucciones...`
-    );
-
-    for (let indice = 0; indice < sentencias.length; indice += 1) {
-      try {
-        await connection.query(sentencias[indice]);
-      } catch (error) {
-        throw new Error(
-          `Error en la instrucción SQL ${indice + 1}: ${error.message}`
-        );
-      }
-    }
-
-    console.log(
-      "Base de datos Smart Parking IoT inicializada correctamente"
-    );
+    await asegurarAdministrador(connection);
   } catch (error) {
     console.error(
       "Error al inicializar la base de datos:",
