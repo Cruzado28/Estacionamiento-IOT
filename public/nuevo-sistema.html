@@ -2540,6 +2540,7 @@ async function doLogin() {
     errorElemento.style.display = "block";
   }
 }
+
 function doLogout() {
   sessionStorage.removeItem(
     "smartParkingToken"
@@ -2549,23 +2550,17 @@ function doLogout() {
     "smartParkingAdmin"
   );
 
-  document.getElementById(
-    "main-layout"
-  ).style.display = "none";
+  cierreSesionAutomatico = false;
+  sistemaInicializado = false;
 
-  document.getElementById(
-    "login-screen"
-  ).style.display = "flex";
+  const contenedorToast =
+    document.getElementById("toast-container");
 
-  document.getElementById(
-    "login-pass"
-  ).value = "";
+  if (contenedorToast) {
+    contenedorToast.innerHTML = "";
+  }
 
-  showToast(
-    "info",
-    "Sesión cerrada correctamente",
-    "fa-right-from-bracket"
-  );
+  window.location.reload();
 }
 
 document.addEventListener(
