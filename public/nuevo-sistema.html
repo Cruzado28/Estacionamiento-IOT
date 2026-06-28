@@ -360,7 +360,17 @@ tbody tr:hover{background:var(--bg-hover)}
 .sublayout{display:flex;gap:16px}
 .sublayout-main{flex:1;min-width:0}
 .sublayout-side{width:300px;flex-shrink:0}
-#page-tariffs button{display:none!important}
+/* Los módulos de roles, promociones y establecimientos aún son de consulta.
+   Sus botones permanecen ocultos hasta conectar sus operaciones con MySQL. */
+#tariffs-t2 button,
+#tariffs-t3 button,
+#tariffs-t4 button{display:none!important}
+
+#tarifa-guardar-btn{display:inline-flex!important}
+
+.tariff-field:focus-within{
+  border-color:var(--accent);
+}
 </style>
 </head>
 <body>
@@ -430,11 +440,11 @@ tbody tr:hover{background:var(--bg-hover)}
     <h1 class="login-title">Smart Parking IoT</h1>
     <p class="login-sub">Centro Comercial · Panel Administrativo</p>
     <div class="login-input-wrap">
-      <input class="login-input" id="login-user" type="text" placeholder="Usuario" value="admin"/>
+      <input class="login-input" id="login-user" type="text" placeholder="Usuario" autocomplete="username"/>
       <i class="fa-solid fa-user login-input-icon"></i>
     </div>
     <div class="login-input-wrap">
-      <input class="login-input" id="login-pass" type="password" placeholder="Contraseña" value="admin123"/>
+      <input class="login-input" id="login-pass" type="password" placeholder="Contraseña" autocomplete="current-password"/>
       <i class="fa-solid fa-eye login-input-icon" onclick="togglePass(this)" style="cursor:pointer"></i>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;width:100%;margin-bottom:16px">
@@ -442,7 +452,7 @@ tbody tr:hover{background:var(--bg-hover)}
       <span style="font-size:12px;color:var(--accent);cursor:pointer">¿Olvidaste tu contraseña?</span>
     </div>
     <button class="login-btn" onclick="doLogin()">Iniciar Sesión</button>
-    <div id="login-err" style="margin-top:12px;font-size:12px;color:var(--red);display:none">Credenciales incorrectas. Use admin / admin123</div>
+    <div id="login-err" style="margin-top:12px;font-size:12px;color:var(--red);display:none">Usuario o contraseña incorrectos.</div>
     <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);width:100%;text-align:center;font-size:11px;color:var(--text-muted)">Smart Parking IoT v2.1.0 · © 2026</div>
   </div>
 </div>
@@ -936,140 +946,253 @@ tbody tr:hover{background:var(--bg-hover)}
     <!-- ======== PAGE: TARIFFS ======== -->
     <div class="page" id="page-tariffs">
       <div class="section-hd" style="margin-bottom:16px">
-        <div><div class="section-title">Tarifas y Beneficios</div><div class="section-sub">Configuración de tarifas, roles y promociones</div></div>
+        <div>
+          <div class="section-title">Tarifas y Beneficios</div>
+          <div class="section-sub">
+            Configuración de tarifas, roles y promociones
+          </div>
+        </div>
       </div>
+
       <div class="tabs">
-        <div class="tab active" onclick="switchTab('tariffs','t1',this)">Tarifas</div>
-        <div class="tab" onclick="switchTab('tariffs','t2',this)">Roles y Privilegios</div>
-        <div class="tab" onclick="switchTab('tariffs','t3',this)">Promociones</div>
-        <div class="tab" onclick="switchTab('tariffs','t4',this)">Establecimientos</div>
+        <div class="tab active" onclick="switchTab('tariffs','t1',this)">
+          Tarifas
+        </div>
+        <div class="tab" onclick="switchTab('tariffs','t2',this)">
+          Roles y Privilegios
+        </div>
+        <div class="tab" onclick="switchTab('tariffs','t3',this)">
+          Promociones
+        </div>
+        <div class="tab" onclick="switchTab('tariffs','t4',this)">
+          Establecimientos
+        </div>
       </div>
 
       <!-- Tab 1: Tarifas -->
       <div id="tariffs-t1">
         <div class="tariff-card">
-          <div class="tariff-hd"><span class="section-title">Configuración Tarifaria</span><button class="btn btn-primary btn-sm" onclick="showToast('success','Tarifas guardadas','fa-check')"><i class="fa-solid fa-check"></i> Guardar</button></div>
+          <div class="tariff-hd">
+            <span class="section-title">
+              Configuración Tarifaria
+            </span>
+
+            <button
+              class="btn btn-primary btn-sm"
+              id="tarifa-guardar-btn"
+              type="button"
+              onclick="guardarTarifaReal()"
+            >
+              <i class="fa-solid fa-check"></i>
+              Guardar
+            </button>
+          </div>
+
           <div class="tariff-grid">
-  <div class="tariff-field">
-    <label>Tarifa por Hora (S/)</label>
-    <input
-      type="number"
-      id="tarifa-hora"
-      value="0"
-      step="0.01"
-      readonly
-    />
-  </div>
+            <div class="tariff-field">
+              <label for="tarifa-hora">
+                Tarifa por Hora (S/)
+              </label>
+              <input
+                type="number"
+                id="tarifa-hora"
+                value="0"
+                min="0"
+                step="0.01"
+              />
+            </div>
 
-  <div class="tariff-field">
-    <label>Tarifa por Minuto (S/)</label>
-    <input
-      type="number"
-      id="tarifa-minuto"
-      value="0"
-      step="0.0001"
-      readonly
-    />
-  </div>
+            <div class="tariff-field">
+              <label for="tarifa-minuto">
+                Tarifa por Minuto (S/)
+              </label>
+              <input
+                type="number"
+                id="tarifa-minuto"
+                value="0"
+                min="0"
+                step="0.0001"
+              />
+            </div>
 
-  <div class="tariff-field">
-    <label>Tiempo de Gracia (min)</label>
-    <input
-      type="number"
-      id="tarifa-gracia"
-      value="0"
-      readonly
-    />
-  </div>
+            <div class="tariff-field">
+              <label for="tarifa-gracia">
+                Tiempo de Gracia (min)
+              </label>
+              <input
+                type="number"
+                id="tarifa-gracia"
+                value="0"
+                min="0"
+                step="1"
+              />
+            </div>
 
-  <div class="tariff-field">
-    <label>Tiempo para Salir Después del Pago (min)</label>
-    <input
-      type="number"
-      id="tarifa-tiempo-salida"
-      value="0"
-      readonly
-    />
-  </div>
+            <div class="tariff-field">
+              <label for="tarifa-tiempo-salida">
+                Tiempo para Salir Después del Pago (min)
+              </label>
+              <input
+                type="number"
+                id="tarifa-tiempo-salida"
+                value="0"
+                min="0"
+                step="1"
+              />
+            </div>
 
-  <div class="tariff-field">
-    <label>Tarifa Máxima Diaria (S/)</label>
-    <input
-      type="number"
-      id="tarifa-maxima"
-      value="0"
-      step="0.01"
-      readonly
-    />
-  </div>
+            <div class="tariff-field">
+              <label for="tarifa-maxima">
+                Tarifa Máxima Diaria (S/)
+              </label>
+              <input
+                type="number"
+                id="tarifa-maxima"
+                value="0"
+                min="0"
+                step="0.01"
+              />
+            </div>
 
-  <div class="tariff-field">
-    <label>Horario Promocional Inicio</label>
-    <input
-      type="time"
-      id="tarifa-horario-inicio"
-      readonly
-    />
-  </div>
+            <div class="tariff-field">
+              <label for="tarifa-horario-inicio">
+                Horario Promocional Inicio
+              </label>
+              <input
+                type="time"
+                id="tarifa-horario-inicio"
+              />
+            </div>
 
-  <div class="tariff-field">
-    <label>Horario Promocional Fin</label>
-    <input
-      type="time"
-      id="tarifa-horario-fin"
-      readonly
-    />
-  </div>
-</div>
+            <div class="tariff-field">
+              <label for="tarifa-horario-fin">
+                Horario Promocional Fin
+              </label>
+              <input
+                type="time"
+                id="tarifa-horario-fin"
+              />
+            </div>
+          </div>
+        </div>
+
         <!-- Simulator -->
         <div class="card">
-          <div class="section-title" style="margin-bottom:14px"><i class="fa-solid fa-calculator" style="color:var(--accent)"></i> Simulador de Cálculo</div>
+          <div class="section-title" style="margin-bottom:14px">
+            <i
+              class="fa-solid fa-calculator"
+              style="color:var(--accent)"
+            ></i>
+            Simulador de Cálculo
+          </div>
+
           <div class="form-row">
             <div class="form-group" style="margin-bottom:0">
-              <label class="form-label">Horas de permanencia</label>
-              <input class="form-input" type="number" id="sim-hours" value="2" min="0" oninput="calcSim()"/>
+              <label class="form-label" for="sim-hours">
+                Horas de permanencia
+              </label>
+              <input
+                class="form-input"
+                type="number"
+                id="sim-hours"
+                value="2"
+                min="0"
+                step="0.25"
+                oninput="calcSim()"
+              />
             </div>
+
             <div class="form-group" style="margin-bottom:0">
-              <label class="form-label">Rol del vehículo</label>
-              <select class="form-select" id="sim-role" onchange="calcSim()">
-                <option value="1">Usuario Común (0%)</option>
-                <option value="0.5">Cliente VIP (50%)</option>
-                <option value="0">Trabajador (100%)</option>
+              <label class="form-label" for="sim-role">
+                Rol del vehículo
+              </label>
+              <select
+                class="form-select"
+                id="sim-role"
+                onchange="calcSim()"
+              >
+                <option value="">
+                  Cargando roles...
+                </option>
               </select>
             </div>
           </div>
+
           <div class="simulator-output">
-            <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">MONTO CALCULADO</div>
-            <div class="sim-total" id="sim-result">S/ 7.00</div>
-            <div style="font-size:11px;color:var(--text-secondary);margin-top:6px" id="sim-detail">2h × S/3.50 = S/7.00 · Sin descuento</div>
+            <div
+              style="
+                font-size:11px;
+                color:var(--text-muted);
+                margin-bottom:4px;
+              "
+            >
+              MONTO CALCULADO
+            </div>
+
+            <div class="sim-total" id="sim-result">
+              S/ 0.00
+            </div>
+
+            <div
+              id="sim-detail"
+              style="
+                font-size:11px;
+                color:var(--text-secondary);
+                margin-top:6px;
+              "
+            >
+              Esperando la tarifa y el rol seleccionados.
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
       <!-- Tab 2: Roles -->
       <div id="tariffs-t2" style="display:none">
         <div class="section-hd" style="margin-bottom:14px">
           <div class="section-title">Roles y Privilegios</div>
-          <button class="btn btn-primary btn-sm" onclick="openRoleModal()"><i class="fa-solid fa-plus"></i> Nuevo Rol</button>
+          <button
+            class="btn btn-primary btn-sm"
+            type="button"
+            onclick="openRoleModal()"
+          >
+            <i class="fa-solid fa-plus"></i>
+            Nuevo Rol
+          </button>
         </div>
         <div id="roles-list"></div>
       </div>
 
-      <!-- Tab 3: Promos -->
+      <!-- Tab 3: Promociones -->
       <div id="tariffs-t3" style="display:none">
         <div class="section-hd" style="margin-bottom:14px">
           <div class="section-title">Promociones por Consumo</div>
-          <button class="btn btn-primary btn-sm" onclick="openPromoModal()"><i class="fa-solid fa-plus"></i> Nueva Promoción</button>
+          <button
+            class="btn btn-primary btn-sm"
+            type="button"
+            onclick="openPromoModal()"
+          >
+            <i class="fa-solid fa-plus"></i>
+            Nueva Promoción
+          </button>
         </div>
         <div id="promos-list"></div>
       </div>
 
-      <!-- Tab 4: Stores -->
+      <!-- Tab 4: Establecimientos -->
       <div id="tariffs-t4" style="display:none">
         <div class="section-hd" style="margin-bottom:14px">
-          <div class="section-title">Catálogo de Establecimientos</div>
-          <button class="btn btn-primary btn-sm" onclick="openStoreModal()"><i class="fa-solid fa-plus"></i> Nuevo Establecimiento</button>
+          <div class="section-title">
+            Catálogo de Establecimientos
+          </div>
+          <button
+            class="btn btn-primary btn-sm"
+            type="button"
+            onclick="openStoreModal()"
+          >
+            <i class="fa-solid fa-plus"></i>
+            Nuevo Establecimiento
+          </button>
         </div>
         <div id="stores-list"></div>
       </div>
@@ -6113,6 +6236,170 @@ async function cargarTarifaReal() {
     );
   }
 }
+
+async function guardarTarifaReal() {
+  const boton =
+    document.getElementById("tarifa-guardar-btn");
+
+  const obtenerValorNumerico = (id) => {
+    const campo = document.getElementById(id);
+    const texto = campo?.value?.trim() ?? "";
+
+    if (texto === "") {
+      return null;
+    }
+
+    const valor = Number(texto);
+
+    return Number.isFinite(valor)
+      ? valor
+      : null;
+  };
+
+  const tarifaHora =
+    obtenerValorNumerico("tarifa-hora");
+
+  const tarifaMinuto =
+    obtenerValorNumerico("tarifa-minuto");
+
+  const tiempoGraciaMinutos =
+    obtenerValorNumerico("tarifa-gracia");
+
+  const tiempoSalidaDespuesPagoMinutos =
+    obtenerValorNumerico(
+      "tarifa-tiempo-salida"
+    );
+
+  const tarifaMaximaDiaria =
+    obtenerValorNumerico("tarifa-maxima");
+
+  const horarioPromocionalInicio =
+    document.getElementById(
+      "tarifa-horario-inicio"
+    )?.value || null;
+
+  const horarioPromocionalFin =
+    document.getElementById(
+      "tarifa-horario-fin"
+    )?.value || null;
+
+  const valoresNumericos = [
+    tarifaHora,
+    tarifaMinuto,
+    tiempoGraciaMinutos,
+    tiempoSalidaDespuesPagoMinutos,
+    tarifaMaximaDiaria
+  ];
+
+  if (
+    valoresNumericos.some(
+      (valor) =>
+        valor === null ||
+        valor < 0
+    )
+  ) {
+    showToast(
+      "error",
+      "Completa correctamente todos los valores tarifarios",
+      "fa-triangle-exclamation"
+    );
+
+    return;
+  }
+
+  if (
+    !Number.isInteger(tiempoGraciaMinutos) ||
+    !Number.isInteger(
+      tiempoSalidaDespuesPagoMinutos
+    )
+  ) {
+    showToast(
+      "error",
+      "Los tiempos deben ingresarse en minutos completos",
+      "fa-triangle-exclamation"
+    );
+
+    return;
+  }
+
+  try {
+    if (boton) {
+      boton.disabled = true;
+      boton.innerHTML = `
+        <i class="fa-solid fa-spinner fa-spin"></i>
+        Guardando...
+      `;
+    }
+
+    const respuesta = await fetch(
+      "/api/v2/configuracion/tarifa",
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          tarifaHora,
+          tarifaMinuto,
+          tiempoGraciaMinutos,
+          tiempoSalidaDespuesPagoMinutos,
+          tarifaMaximaDiaria,
+          horarioPromocionalInicio,
+          horarioPromocionalFin
+        })
+      }
+    );
+
+    let datos = null;
+
+    try {
+      datos = await respuesta.json();
+    } catch (errorLectura) {
+      throw new Error(
+        "El servidor devolvió una respuesta no válida"
+      );
+    }
+
+    if (!respuesta.ok || !datos.ok) {
+      throw new Error(
+        datos.mensaje ||
+        "No se pudo actualizar la tarifa"
+      );
+    }
+
+    tarifaActual = datos.tarifa;
+
+    await cargarTarifaReal();
+
+    showToast(
+      "success",
+      datos.mensaje ||
+      "Tarifa actualizada correctamente",
+      "fa-circle-check"
+    );
+  } catch (error) {
+    console.error(
+      "Error al guardar la tarifa:",
+      error
+    );
+
+    showToast(
+      "error",
+      error.message ||
+      "No se pudo guardar la tarifa",
+      "fa-triangle-exclamation"
+    );
+  } finally {
+    if (boton) {
+      boton.disabled = false;
+      boton.innerHTML = `
+        <i class="fa-solid fa-check"></i>
+        Guardar
+      `;
+    }
+  }
+}
+
 
 function calcSim() {
   const horas = Number(
