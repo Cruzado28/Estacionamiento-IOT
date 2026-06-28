@@ -25,6 +25,10 @@ const configuracionRoutes = require(
   "./routes/configuracionRoutes"
 );
 
+const rolesRoutes = require(
+  "./routes/rolesRoutes"
+);
+
 const iotRoutes = require(
   "./routes/iotRoutes"
 );
@@ -138,6 +142,12 @@ app.use(
   "/api/v2/historial",
   verificarToken,
   historialRoutes
+);
+
+app.use(
+  "/api/v2/configuracion/roles",
+  verificarToken,
+  rolesRoutes
 );
 
 app.use(
