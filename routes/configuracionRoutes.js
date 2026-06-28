@@ -559,4 +559,172 @@ router.put("/administrador/preferencias", async (req, res) => {
   }
 });
 
+// ============================================================
+// PUT /api/v2/configuracion/tarifa
+// Actualiza la tarifa activa del estacionamiento
+// ============================================================
+router.put("/tarifa", async (req, res) => {
+  try {
+    const tarifaHora = Number(
+      req.body.tarifaHora
+    );
+
+    const tarifaMinuto = Number(
+      req.body.tarifaMinuto
+    );
+
+    const tiempoGraciaMinutos = Number(
+      req.body.tiempoGraciaMinutos
+    );
+
+    const tiempoSalidaDespuesPagoMinutos = Number(
+      req.body.tiempoSalidaDespuesPagoMinutos
+    );
+
+    const tarifaMaximaDiaria = Number(
+      req.body.tarifaMaximaDiaria
+    );
+
+    const horarioPromocionalInicio =
+      req.body.horarioPromocionalInicio || null;
+
+    const horarioPromocionalFin =
+      req.body.horarioPromocionalFin || null;
+
+    const valoresNumericos = [
+      tarifaHora,
+      tarifaMinuto,
+      tiempoGraciaMinutos,
+      tiempoSalidaDespuesPagoMinutos,
+      tarifaMaximaDiaria
+    ];
+
+    if (
+      valoresNumericos.some(
+        (valor) =>
+          !Number.isFinite(valor) ||
+          valor < 0
+      )
+    ) {
+      return res.status(400).json({
+        ok: false,
+        mensaje:
+          "Los valores de la tarifa deben ser números válidos y no negativos"
+      });
+    }
+
+    if (
+      !Number.isInteger(tiempoGraciaMinutos) ||
+      !Number.isInteger(
+        tiempoSalidaDespuesPagoMinutos
+      )
+    ) {
+      return res.status(400).json({
+        ok: false,
+        mensaje:
+          "Los tiempos deben ingresarse en minutos completos"
+      });
+    }
+
+    const formatoHora = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+    if (
+      horarioPromocionalInicio &&
+      !formatoHora.test(
+        horarioPromocionalInicio
+      )
+    ) {
+      return res.status(400).json({
+        ok: false,
+        mensaje:
+          "El horario promocional de inicio no es válido"
+      });
+    }
+
+    if (
+      horarioPromocionalFin &&
+      !formatoHora.test(
+        horarioPromocionalFin
+      )
+    ) {
+      return res.status(400).json({
+        ok: false,
+        mensaje:
+          "El horario promocional de fin no es válido"
+      });
+    }
+
+    const [tarifas] = await db.query(`
+      SELECT id_tarifa
+      FROM tarifas_config
+      WHERE estado = 'Activa'
+      ORDER BY id_tarifa DESC
+      LIMIT 1
+    `);
+
+    if (tarifas.length === 0) {
+      return res.status(404).json({
+        ok: false,
+        mensaje:
+          "No existe una tarifa activa para actualizar"
+      });
+    }
+
+    const idTarifa = tarifas[0].id_tarifa;
+
+    await db.query(
+      `
+        UPDATE tarifas_config
+        SET
+          tarifa_hora = ?,
+          tarifa_minuto = ?,
+          tiempo_gracia_min = ?,
+          tiempo_salida_despues_pago_min = ?,
+          tarifa_maxima_diaria = ?,
+          horario_promocional_inicio = ?,
+          horario_promocional_fin = ?
+        WHERE id_tarifa = ?
+      `,
+      [
+        tarifaHora,
+        tarifaMinuto,
+        tiempoGraciaMinutos,
+        tiempoSalidaDespuesPagoMinutos,
+        tarifaMaximaDiaria,
+        horarioPromocionalInicio,
+        horarioPromocionalFin,
+        idTarifa
+      ]
+    );
+
+    return res.json({
+      ok: true,
+      mensaje:
+        "Tarifa actualizada correctamente",
+      tarifa: {
+        idTarifa,
+        tarifaHora,
+        tarifaMinuto,
+        tiempoGraciaMinutos,
+        tiempoSalidaDespuesPagoMinutos,
+        tarifaMaximaDiaria,
+        horarioPromocionalInicio,
+        horarioPromocionalFin
+      }
+    });
+  } catch (error) {
+    console.error(
+      "Error al actualizar la tarifa:",
+      error.message
+    );
+
+    return res.status(500).json({
+      ok: false,
+      mensaje:
+        "Error al actualizar la tarifa",
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
