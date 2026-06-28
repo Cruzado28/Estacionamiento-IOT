@@ -107,6 +107,90 @@ async function esquemaNuevoCompleto(connection) {
 }
 
 /**
+ * Crea la tabla de configuración si todavía no existe
+ * y registra la configuración inicial del estacionamiento.
+ */
+async function asegurarConfiguracionSistema(connection) {
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS configuracion_sistema (
+      id_configuracion TINYINT UNSIGNED PRIMARY KEY,
+
+      nombre_estacionamiento VARCHAR(150)
+        NOT NULL
+        DEFAULT 'Smart Parking IoT',
+
+      tiempo_maximo_horas INT UNSIGNED
+        NOT NULL
+        DEFAULT 24,
+
+      alertas_visuales BOOLEAN
+        NOT NULL
+        DEFAULT TRUE,
+
+      alertas_sonoras BOOLEAN
+        NOT NULL
+        DEFAULT FALSE,
+
+      correos_automaticos BOOLEAN
+        NOT NULL
+        DEFAULT FALSE,
+
+      alertas_sensores_desconectados BOOLEAN
+        NOT NULL
+        DEFAULT TRUE,
+
+      creado_en DATETIME
+        DEFAULT CURRENT_TIMESTAMP,
+
+      actualizado_en DATETIME
+        DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+
+      CONSTRAINT chk_configuracion_tiempo
+        CHECK (
+          tiempo_maximo_horas >= 1
+          AND tiempo_maximo_horas <= 168
+        )
+    )
+    ENGINE=InnoDB
+    DEFAULT CHARSET=utf8mb4
+    COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await connection.query(`
+    INSERT INTO configuracion_sistema (
+      id_configuracion,
+      nombre_estacionamiento,
+      tiempo_maximo_horas,
+      alertas_visuales,
+      alertas_sonoras,
+      correos_automaticos,
+      alertas_sensores_desconectados
+    )
+    VALUES (
+      1,
+      'Smart Parking IoT',
+      24,
+      TRUE,
+      FALSE,
+      FALSE,
+      TRUE
+    )
+    ON DUPLICATE KEY UPDATE
+      nombre_estacionamiento =
+        CASE
+          WHEN TRIM(nombre_estacionamiento) = ''
+          THEN 'Smart Parking IoT'
+          ELSE nombre_estacionamiento
+        END
+  `);
+
+  console.log(
+    "Configuración del sistema verificada correctamente"
+  );
+}
+
+/**
  * Crea o actualiza el administrador inicial usando
  * las variables configuradas en Railway o en el archivo .env.
  */
@@ -316,6 +400,7 @@ async function initDatabase() {
       );
     }
 
+    await asegurarConfiguracionSistema(connection);
     await asegurarAdministrador(connection);
   } catch (error) {
     console.error(
